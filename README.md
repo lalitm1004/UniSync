@@ -24,7 +24,7 @@ PASSWORD = "ThisIsntMyPassword"
 ```
 ---
  |-- __venv__
- |-- Secrets
+ |-- secrets
  |      |-- client_secret.json
  |-- .env
  |-- .gitignore
