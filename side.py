@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import pandas
 import pytz
@@ -16,50 +15,38 @@ from googleapiclient.discovery import build
 # Selenium Imports
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-class _Class:
-    def __init__(self, class_data) -> None:
-        self.code = class_data["class_code"]
-        self.type = class_data["class_type"]
-        self.start = class_data["start_timing"]
-        self.end = class_data["end_timing"]
-        self.venue = class_data["venue"]
+load_dotenv()
 
-def progress_bar(title: str, progress: int, total: int) -> None:
-        percent = 100 * (progress / float(total))
-        bar = "█" * int(percent) + "-" * int(100 - percent)
-        end = "\r" if progress != total else "\n"
-        print(f"\r[{title}] |{bar}| {percent:.2f}%", end=end)
+CLIENT_SECRET_PATH = str(Path("config/client_secret.json"))
+TOKEN_PATH = str(Path("config/token.json"))
 
 
-def get_calendar_service_service():
+def get_calendar_service():
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
-    TOKEN_PATH = Path("config/token.json")
-    CLIENT_SECRET_PATH = Path("config/client_secret.json")
 
     creds = None
     if os.path.exists(TOKEN_PATH):
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-    
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
-        
+
         with open(TOKEN_PATH, "w") as f:
             f.write(creds.to_json())
-    
+
     calendar_service = build("calendar", "v3", credentials=creds)
     return calendar_service
 
-def login():
-    load_dotenv()
-    LOGIN_URL = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/?cmd=login"
 
+def login() -> None:
+    LOGIN_URL = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/?cmd=login"
     driver.get(LOGIN_URL)
     netid = driver.find_element(By.ID, "userid")
     password = driver.find_element(By.ID, "pwd")
@@ -71,22 +58,43 @@ def login():
     password.send_keys(os.getenv("PASSWORD"))
     login.click()
 
-def grab_schedule_html():
 
-    # login()
-    SCHEDULE_URL = "https://prodweb.snu.in/psp/CSPROD_1/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_SCHD_W"
-    driver.get(SCHEDULE_URL)
-    driver.switch_to.frame(driver.find_element(By.ID, "ptifrmtgtframe"))
-    
-    schedule_html = driver.find_element(By.ID, "WEEKLY_SCHED_HTMLAREA")
-    return schedule_html.get_attribute("outerHTML")
+def grab_html_data():
+    """
+    Code written by
+    1. Pustak Pathak - https://github.com/PustakP
+    """
+    login()
+    url = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_SCHD_W"  # Replace with the desired URL
 
-def parse_schedule_html(html):
-    soup = BeautifulSoup(html, "html.parser")
+    # Initialize a Selenium WebDriver (make sure you have the corresponding browser driver installed)
+    driver.get(url)
+
+    # Detects when user logs in and closes browser after grabbing relevant html data
+    iframe_locator = (By.ID, "ptifrmtgtframe")
+    wait = WebDriverWait(driver, 60)
+    try:
+        iframe = wait.until(EC.presence_of_element_located(iframe_locator))
+        iframe_src = iframe.get_attribute("src")
+    except:
+        print("Timeout.")
+
+    # Open the iframe source URL
+    driver.get(iframe_src)
+    iframe_html_content = driver.page_source
+
+    driver.quit()
+    return iframe_html_content
+
+
+def parse_html_data(html_data):
+    soup = BeautifulSoup(html_data, "html.parser")
+
     element = soup.find("table", id="WEEKLY_SCHED_HTMLAREA")
-    table = pandas.read_html(str(element))[0]
 
-    raw_sched = {
+    table = pandas.read_html(str(element.prettify()))[0]
+
+    raw_schedule = {
         0: table[table.columns[1]].tolist(),
         1: table[table.columns[2]].tolist(),
         2: table[table.columns[3]].tolist(),
@@ -96,23 +104,24 @@ def parse_schedule_html(html):
         6: table[table.columns[7]].tolist(),
     }
 
-    formatted_sched = {}
-    for i in range(7):
+    formatted_schedule = {}
+    for i in range(0, 7):
         unique_list = []
-        for element in raw_sched[i]:
+        for element in raw_schedule[i]:
             if (
-                element not in unique_list # Check for duplicates
-                and not element != element # Check for NaN
+                element not in unique_list  # Check for duplicates
+                and not element != element  # Check for NaN
                 and not element.count("Floor") > 1
                 and not element.count("Block") > 1
             ):
                 unique_list.append(element)
-        
+
         for index, element in enumerate(unique_list):
             unique_list[index] = [
                 i
                 for i in element.split(" ")
-                if i not in [
+                if i
+                not in [
                     "",
                     "-",
                     "Floor",
@@ -127,24 +136,24 @@ def parse_schedule_html(html):
                     "D",
                 ]
             ]
-        
-        formatted_sched[i] = unique_list
-    
-    for i in range(7):
-        day_sched = formatted_sched[i]
-        for index, element in enumerate(day_sched):
-            class_data = {
+
+        formatted_schedule[i] = unique_list
+
+    for i in range(0, 7):
+        day_schedule = formatted_schedule[i]
+        for index, element in enumerate(day_schedule):
+            _class_data = {
                 "class_code": element[1],
                 "class_type": element[2],
                 "start_timing": element[4],
                 "end_timing": element[5],
                 "venue": element[6],
             }
-            if "location" in class_data["venue"].lower():
-                class_data["venue"] = "TBA"
-            day_sched[index] = _Class(class_data)
-        formatted_sched[i] = day_sched
-    return formatted_sched
+            day_schedule[index] = _class_data
+        formatted_schedule[i] = day_schedule
+
+    return formatted_schedule
+
 
 def fetch_week_timestamps() -> tuple:
     current_datetime_kolkata = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
@@ -164,64 +173,37 @@ def fetch_week_timestamps() -> tuple:
 
     return (start_of_week_rfc3339, end_of_week_rfc3339)
 
-def create_calendar() -> str:
-    request_body = {"summary": "UniSync", "timezone": "Asia/Kolkata"}
-    response = (
-        calendar_service.calendars()
-        .insert(body=request_body)
-        .execute()
-    )
-    return response["id"]
 
-def fetch_calendar() -> str:
-    DEPLOYMENT_PATH = Path("config/deployment.json")
+def main():
+    calendar_service = get_calendar_service()
 
-    deployment = None
-    if os.path.exists(DEPLOYMENT_PATH):
-        with open(DEPLOYMENT_PATH, "r") as f:
-            deployment = json.load(f)
-    
-    if not deployment:
-        calendar_id = create_calendar()
-        with open(DEPLOYMENT_PATH, "w") as f:
-            json.dump({"calendar_id" : calendar_id}, f, indent=4)
-
-    with open(DEPLOYMENT_PATH, "r") as f:
-        deployment = json.load(f)
-    calendar_id = deployment["calendar_id"]
-
-    # To ensure user is subscribed to calendar
+    # Create SNU.Schedule calendar if it doesnt exist already
     snu_calendar = None
     page_token = None
     while True:
-        calendars = (
-            calendar_service.calendarList()
-            .list(pageToken = page_token)
-            .execute()
-        )
+        calendars = calendar_service.calendarList().list(pageToken=page_token).execute()
         for calendar in calendars["items"]:
-            snu_calendar = calendar if calendar["id"] == calendar_id else None
-        page_token = calendars.get("nextPageTokens")
+            snu_calendar = calendar if calendar["summary"] == "SNU.Schedule" else None
+        page_token = calendars.get("nextPageToken")
         if not page_token:
             break
-    
-    if not snu_calendar:
-        calendar_id = create_calendar()
-        with open(DEPLOYMENT_PATH, "w") as f:
-            json.dump({"calendar_id": calendar_id}, f, indent=4)
-    
-    return calendar_id
 
-def clear_calendar(calendar_id:str) -> None:
+    if not snu_calendar:
+        request_body = {"summary": "SNU.Schedule", "timezone": "Asia/Kolkata"}
+        snu_calendar = calendar_service.calendars().insert(body=request_body).execute()
+        # Access calendar id -> snu_calendar["id"]
+    html_data = grab_html_data()
+    schedule_data = parse_html_data(html_data=html_data)
+
     week_timings = fetch_week_timestamps()
-    
+
     calendar_events = []
     page_token = None
     while True:
         events = (
             calendar_service.events()
             .list(
-                calendarId=calendar_id,
+                calendarId=snu_calendar["id"],
                 timeMin=week_timings[0],
                 timeMax=week_timings[1],
                 pageToken=page_token,
@@ -231,47 +213,32 @@ def clear_calendar(calendar_id:str) -> None:
         for event in events["items"]:
             calendar_events.append(event)
         page_token = events.get("nextPageToken")
+
         if not page_token:
             break
-    
-    for index, event in enumerate(calendar_events):
-        response = (
-            calendar_service.events()
-            .delete(
-                calendarId=calendar_id,
-                eventId=event["id"]
-            )
-            .execute()
-        )
-        progress_bar("Clearing Week", progress=index+1, total=len(calendar_events))
 
-def push_classes(calendar_id:str, schedule_data:dict) -> None:
-    day_dict = {
-        0: "Monday",
-        1: "Tuesday",
-        2: "Wednesday",
-        3: "Thursday",
-        4: "Friday",
-        5: "Saturday",
-        6: "Sunday",
-    }
-    
+    for event in calendar_events:
+        calendar_service.events().delete(
+            calendarId=snu_calendar["id"], eventId=event["id"]
+        ).execute()
+
     for day, events_list in schedule_data.items():
-        for index, event in enumerate(events_list):
+        for event_details in events_list:
             event_title = (
-                f"{event.code} - {event.type}"
+                f"{event_details['class_code']} - {event_details['class_type']}"
             )
-            event_location = event.venue
+            event_location = event_details["venue"]
 
             # Parse start and end timings
             day_offset = datetime.timedelta(
                 days=1 * (day - datetime.datetime.now().weekday())
             )
+
             start_time = datetime.datetime.strptime(
-                event.start, "%I:%M%p"
+                event_details["start_timing"], "%I:%M%p"
             )
             end_time = datetime.datetime.strptime(
-                event.end, "%I:%M%p"
+                event_details["end_timing"], "%I:%M%p"
             )
             monday = datetime.datetime.now() + day_offset
             start_day_time = monday.replace(
@@ -302,24 +269,11 @@ def push_classes(calendar_id:str, schedule_data:dict) -> None:
 
             # Insert event to Google Calendar
             calendar_service.events().insert(
-                calendarId=calendar_id, body=event
+                calendarId=snu_calendar["id"], body=event
             ).execute()
-            progress_bar(f"Pushing {day_dict[day]} Classes", index+1, len(events_list))
 
 
 if __name__ == "__main__":
-
-    options = Options()
-    options.add_argument('--headless=new')
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Chrome()
     wait = WebDriverWait(driver, 15)
-    
-    calendar_service = get_calendar_service_service()
-
-    login()
-    html = grab_schedule_html()
-    driver.quit()
-    formatted_sched = parse_schedule_html(html)
-    calendar_id = fetch_calendar()
-    clear_calendar(calendar_id)
-    push_classes(calendar_id, formatted_sched)
+    main()
