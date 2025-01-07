@@ -11,6 +11,7 @@ def main() -> None:
 
         calendar_synchronizer = CalendarSynchronizer()
         calendar_synchronizer.synchronize_schedule(schedule)
+        print("Successful")
     except Exception as e:
         print(f"Error: {str(e)}")
 
