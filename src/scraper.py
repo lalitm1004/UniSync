@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from dotenv import load_dotenv
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -7,7 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 
-from dotenv import load_dotenv
+from utilities import progress_bar
 
 @dataclass
 class ERPCredentials:
@@ -71,12 +72,15 @@ class SNUERPScraper:
         return schedule_html.get_attribute("outerHTML")
 
     def get_weekly_schedule_html(self) -> str:
+        progress_bar("Scraping ERP Data", 0, 1)
         try:
             credentials = ERPCredentials.from_env()
             self._login(credentials)
             return self._get_schedule_html()
         finally:
             self.driver.quit()
+            progress_bar("Scraping ERP Data", 1, 1)
+
 
 def main():
     """test the scraper"""

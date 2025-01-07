@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import Dict, List
 
+from utilities import progress_bar
+
 @dataclass
 class ScheduleEntry:
     course_code: str
@@ -82,6 +84,7 @@ class ScheduleParser:
                     day_schedule.append(schedule_entry)
 
             formatted_schedule[day] = day_schedule
+            progress_bar("Formatting Schedule", day + 1, 7)
 
         return formatted_schedule
 
