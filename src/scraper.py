@@ -10,12 +10,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from dotenv import load_dotenv
 
 @dataclass
-class Credentials:
+class ERPCredentials:
     netid: str
     password: str
 
     @classmethod
-    def from_env(cls) -> 'Credentials':
+    def from_env(cls) -> 'ERPCredentials':
         load_dotenv()
         netid = os.getenv("SNU_NETID")
         password = os.getenv("SNU_PASSWORD")
@@ -43,7 +43,7 @@ class SNUERPScraper:
         options.add_argument("--disable-dev-shm-usage")
         return webdriver.Chrome(options=options)
 
-    def _login(self, credentials: Credentials) -> None:
+    def _login(self, credentials: ERPCredentials) -> None:
         self.driver.get(self.LOGIN_URL)
 
         netid_input = self.driver.find_element(By.ID, "userid")
@@ -72,7 +72,7 @@ class SNUERPScraper:
 
     def get_weekly_schedule_html(self) -> str:
         try:
-            credentials = Credentials.from_env()
+            credentials = ERPCredentials.from_env()
             self._login(credentials)
             return self._get_schedule_html()
         finally:
