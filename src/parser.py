@@ -6,6 +6,7 @@ from typing import Dict, List
 
 from utilities import progress_bar
 
+
 @dataclass
 class ScheduleEntry:
     course_code: str
@@ -17,8 +18,22 @@ class ScheduleEntry:
     def __str__(self) -> str:
         return f"<{self.course_code} | {self.component_type} | {self.start_timing}-{self.end_timing} | {self.venue}>"
 
+
 class ScheduleParser:
-    EXCLUDED_TOKENS = {"", "-", "Floor", "Block", "G.", "F.", "S.", "T.", "A", "B", "C", "D"}
+    EXCLUDED_TOKENS = {
+        "",
+        "-",
+        "Floor",
+        "Block",
+        "G.",
+        "F.",
+        "S.",
+        "T.",
+        "A",
+        "B",
+        "C",
+        "D",
+    }
 
     @staticmethod
     def extract_table_data(html_str: str) -> pd.DataFrame:
@@ -30,24 +45,22 @@ class ScheduleParser:
 
     @staticmethod
     def create_raw_schedule(table: pd.DataFrame) -> Dict[int, List[str]]:
-        return {
-            day: table[table.columns[day + 1]].to_list()
-            for day in range(7)
-        }
+        return {day: table[table.columns[day + 1]].to_list() for day in range(7)}
 
     @staticmethod
     def clean_schedule_entry(entry: str) -> List[str]:
         return [
-            token for token in entry.split()
+            token
+            for token in entry.split()
             if token not in ScheduleParser.EXCLUDED_TOKENS
         ]
 
     @staticmethod
     def is_valid_entry(entry: str) -> bool:
         return (
-            entry == entry and # not NaN
-            entry.count("Floor") <= 1 and
-            entry.count("Block") <= 1 # elminate clash blocks
+            entry == entry  # not NaN
+            and entry.count("Floor") <= 1
+            and entry.count("Block") <= 1  # elminate clash blocks
         )
 
     @staticmethod
@@ -61,7 +74,7 @@ class ScheduleParser:
             component_type=tokens[2],
             start_timing=tokens[4],
             end_timing=tokens[5],
-            venue=ScheduleParser.process_venue(tokens[6])
+            venue=ScheduleParser.process_venue(tokens[6]),
         )
 
     @classmethod
@@ -72,14 +85,13 @@ class ScheduleParser:
         formatted_schedule = {}
         for day in range(7):
             valid_entries = {
-                entry for entry in raw_schedule[day]
-                if cls.is_valid_entry(entry)
+                entry for entry in raw_schedule[day] if cls.is_valid_entry(entry)
             }
 
             day_schedule = []
             for entry in valid_entries:
                 tokens = cls.clean_schedule_entry(entry)
-                if len(tokens) >= 7: # ensure we have enoug tokens
+                if len(tokens) >= 7:  # ensure we have enoug tokens
                     schedule_entry = cls.create_schedule_entry(tokens)
                     day_schedule.append(schedule_entry)
 
@@ -87,6 +99,7 @@ class ScheduleParser:
             progress_bar("Formatting Schedule", day + 1, 7)
 
         return formatted_schedule
+
 
 def main():
     """test the parser."""
@@ -101,6 +114,7 @@ def main():
         print(f"\nday > {day}:")
         for entry in entries:
             print(f"  {entry}")
+
 
 if __name__ == "__main__":
     main()

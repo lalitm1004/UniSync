@@ -10,21 +10,25 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from utilities import progress_bar
 
+
 @dataclass
 class ERPCredentials:
     netid: str
     password: str
 
     @classmethod
-    def from_env(cls) -> 'ERPCredentials':
+    def from_env(cls) -> "ERPCredentials":
         load_dotenv()
         netid = os.getenv("SNU_NETID")
         password = os.getenv("SNU_PASSWORD")
 
         if not netid or not password:
-            raise ValueError("Missing cresentials. Ensure SNU_NETID and SNU_PASSWORD are set in your environment variables or .env file.")
+            raise ValueError(
+                "Missing cresentials. Ensure SNU_NETID and SNU_PASSWORD are set in your environment variables or .env file."
+            )
 
         return cls(netid=netid, password=password)
+
 
 class SNUERPScraper:
     # url constants
@@ -60,7 +64,9 @@ class SNUERPScraper:
         try:
             self.wait.until(lambda driver: driver.current_url != self.LOGIN_URL)
         except TimeoutException:
-            raise RuntimeError("Login appears to have failed. Please check your credentials.")
+            raise RuntimeError(
+                "Login appears to have failed. Please check your credentials."
+            )
 
     def _get_schedule_html(self) -> str:
         self.driver.get(self.WEEKLY_SCHEDULE_URL)
@@ -90,6 +96,7 @@ def main():
         print(schedule_html[:500] + "...")
     except Exception as e:
         print(f"Error occured: {str(e)}")
+
 
 if __name__ == "__main__":
     main()

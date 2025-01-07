@@ -16,19 +16,22 @@ from googleapiclient.errors import HttpError
 from parser import ScheduleEntry
 from utilities import progress_bar
 
+
 @dataclass
 class GoogleOAuthConfig:
     client_id: str
     client_secret: str
 
     @classmethod
-    def from_env(cls) -> 'GoogleOAuthConfig':
+    def from_env(cls) -> "GoogleOAuthConfig":
         load_dotenv()
         client_id = os.getenv("GOOGLE_CLIENT_ID")
         client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
 
         if not client_id or not client_secret:
-            raise ValueError("Missing cresentials. Ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in your environment variables or .env file.")
+            raise ValueError(
+                "Missing cresentials. Ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in your environment variables or .env file."
+            )
 
         return cls(client_id=client_id, client_secret=client_secret)
 
@@ -39,9 +42,10 @@ class GoogleOAuthConfig:
                 "client_secret": self.client_secret,
                 "auth_uri": self.auth_uri,
                 "token_uri": self.token_uri,
-                "redirect_uris": [self.redirect_uri]
+                "redirect_uris": [self.redirect_uri],
             }
         }
+
 
 class CalendarSynchronizer:
 
@@ -63,12 +67,13 @@ class CalendarSynchronizer:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize calendar service > {str(e)}")
 
-
     def _get_credentials(self) -> Credentials:
         creds = None
 
         if self.TOKEN_PATH.exists():
-            creds = Credentials.from_authorized_user_file(str(self.TOKEN_PATH), self.SCOPES)
+            creds = Credentials.from_authorized_user_file(
+                str(self.TOKEN_PATH), self.SCOPES
+            )
 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -76,14 +81,13 @@ class CalendarSynchronizer:
             else:
                 oauth_config = GoogleOAuthConfig.from_env()
                 flow = InstalledAppFlow.from_client_config(
-                    oauth_config.to_client_config(),
-                    self.SCOPES
+                    oauth_config.to_client_config(), self.SCOPES
                 )
                 creds = flow.run_local_server(port=0)
 
             # Save the credentials
             self.TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.TOKEN_PATH, 'w') as token:
+            with open(self.TOKEN_PATH, "w") as token:
                 token.write(creds.to_json())
 
         return creds
@@ -97,7 +101,7 @@ class CalendarSynchronizer:
             hours=now.hour,
             minutes=now.minute,
             seconds=now.second,
-            microseconds=now.microsecond
+            microseconds=now.microsecond,
         )
 
         end = start + datetime.timedelta(days=6, hours=23, minutes=59, seconds=59)
@@ -108,22 +112,19 @@ class CalendarSynchronizer:
         if self.DEPLOYMENT_PATH.exists():
             with open(self.DEPLOYMENT_PATH, "r") as f:
                 deployment: dict = json.load(f)
-                calendar_id = deployment.get('calendar_id')
+                calendar_id = deployment.get("calendar_id")
                 if calendar_id and self._calendar_exists(calendar_id):
                     return calendar_id
 
-        calendar = {
-            'summary': self.CALENDAR_SUMMARY,
-            'timeZone': self.TIMEZONE
-        }
+        calendar = {"summary": self.CALENDAR_SUMMARY, "timeZone": self.TIMEZONE}
 
         try:
             created_calendar = self.service.calendars().insert(body=calendar).execute()
-            calendar_id = created_calendar['id']
+            calendar_id = created_calendar["id"]
 
             self.DEPLOYMENT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.DEPLOYMENT_PATH, 'w') as f:
-                json.dump({'calendar_id': calendar_id}, f, indent=4)
+            with open(self.DEPLOYMENT_PATH, "w") as f:
+                json.dump({"calendar_id": calendar_id}, f, indent=4)
 
             return calendar_id
         except HttpError as e:
@@ -137,10 +138,7 @@ class CalendarSynchronizer:
             return False
 
     def _create_event(
-        self,
-        entry: ScheduleEntry,
-        day: int,
-        base_date: datetime.datetime
+        self, entry: ScheduleEntry, day: int, base_date: datetime.datetime
     ) -> dict:
         day_delta = datetime.timedelta(days=(day - base_date.weekday()))
         event_date = base_date + day_delta
@@ -149,16 +147,10 @@ class CalendarSynchronizer:
         end_time = datetime.datetime.strptime(entry.end_timing, "%I:%M%p")
 
         start_datetime = event_date.replace(
-            hour=start_time.hour,
-            minute=start_time.minute,
-            second=0,
-            microsecond=0
+            hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0
         )
         end_datetime = event_date.replace(
-            hour=end_time.hour,
-            minute=end_time.minute,
-            second=0,
-            microsecond=0
+            hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0
         )
 
         return {
@@ -195,32 +187,38 @@ class CalendarSynchronizer:
         events = []
         page_token = None
         while True:
-            events_result = self.service.events().list(
-                calendarId=calendar_id,
-                timeMin=start_time,
-                timeMax=end_time,
-                pageToken=page_token
-            ).execute()
-            events.extend(events_result.get('items', []))
-            page_token = events_result.get('nextPageToken')
+            events_result = (
+                self.service.events()
+                .list(
+                    calendarId=calendar_id,
+                    timeMin=start_time,
+                    timeMax=end_time,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            events.extend(events_result.get("items", []))
+            page_token = events_result.get("nextPageToken")
             if not page_token:
                 break
 
         for i, event in enumerate(events, 1):
             self.service.events().delete(
-                calendarId=calendar_id,
-                eventId=event['id']
+                calendarId=calendar_id, eventId=event["id"]
             ).execute()
             progress_bar("Clearing Existing Events", i, len(events))
 
     def _create_new_events(
-        self,
-        calendar_id: str,
-        schedule: Dict[int, List[ScheduleEntry]]
+        self, calendar_id: str, schedule: Dict[int, List[ScheduleEntry]]
     ) -> None:
         days = {
-            0: "Monday", 1: "Tuesday", 2: "Wednesday",
-            3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"
+            0: "Monday",
+            1: "Tuesday",
+            2: "Wednesday",
+            3: "Thursday",
+            4: "Friday",
+            5: "Saturday",
+            6: "Sunday",
         }
 
         base_date = datetime.datetime.now(pytz.timezone(self.TIMEZONE))
@@ -229,10 +227,10 @@ class CalendarSynchronizer:
             for i, entry in enumerate(entries, 1):
                 event = self._create_event(entry, day, base_date)
                 self.service.events().insert(
-                    calendarId=calendar_id,
-                    body=event
+                    calendarId=calendar_id, body=event
                 ).execute()
                 progress_bar(f"Creating {days[day]} Events", i, len(entries))
+
 
 def main():
     """test the synchronizer"""
@@ -248,6 +246,7 @@ def main():
         calendar_synchronizer.synchronize_schedule(schedule)
     except Exception as e:
         print(f"Error: {str(e)}")
+
 
 if __name__ == "__main__":
     main()
