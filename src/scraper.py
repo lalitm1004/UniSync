@@ -17,9 +17,9 @@ class Scraper:
         self.driver = webdriver.Chrome(options=options)
         self.wait = WebDriverWait(self.driver, 15)
 
-    def scrape_weekly_schedule_html(self) -> str:
+    def get_weekly_schedule_html(self) -> str:
         self.__login_erp()
-        html = self.__grab_weekly_schedule_html()
+        html = self.__scrape_weekly_schedule_html()
         self.driver.quit()
         return html
 
@@ -42,7 +42,7 @@ class Scraper:
         submit_button = self.driver.find_element(By.CLASS_NAME, "psloginbutton")
         submit_button.click()
 
-    def __grab_weekly_schedule_html(self) -> str:
+    def __scrape_weekly_schedule_html(self) -> str:
         WEEKLY_SCHEDULE_URL = "https://prodweb.snu.in/psp/CSPROD_1/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_SCHD_W"
         
         self.driver.get(WEEKLY_SCHEDULE_URL)
