@@ -37,7 +37,6 @@ class Scraper:
         password_input = self.driver.find_element(By.ID, "pwd")
         password_input.clear()
         password_input.send_keys(os.getenv("SNU_PASSWORD"))
-        print(os.getenv("SNU_PASSWORD"))
 
         submit_button = self.driver.find_element(By.CLASS_NAME, "psloginbutton")
         submit_button.click()
