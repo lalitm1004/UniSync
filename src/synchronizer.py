@@ -40,9 +40,9 @@ class GoogleOAuthConfig:
             "installed": {
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
-                "auth_uri": self.auth_uri,
-                "token_uri": self.token_uri,
-                "redirect_uris": [self.redirect_uri],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": ["http://localhost"],
             }
         }
 
