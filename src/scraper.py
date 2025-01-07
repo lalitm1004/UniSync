@@ -19,7 +19,10 @@ class Scraper:
 
     def scrape_weekly_schedule_html(self) -> str:
         self.__login_erp()
-        return self.__grab_weekly_schedule_html()
+        html = self.__grab_weekly_schedule_html()
+        self.driver.quit()
+        return html
+
 
     def __login_erp(self) -> None:
         load_dotenv()
