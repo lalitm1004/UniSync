@@ -1,2 +1,5 @@
-selenium
+BeautifulSoup4
+lxml
+pandas
 python-dotenv
+selenium
