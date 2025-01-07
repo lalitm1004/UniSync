@@ -52,4 +52,4 @@ class Scraper:
 
 if __name__ == "__main__":
     scraper = Scraper(headless=False)
-    print(scraper.scrape_weekly_schedule_html())
+    print(scraper.get_weekly_schedule_html())
