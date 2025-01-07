@@ -3,6 +3,7 @@
 __pycache__
 .pyc
 
+secrets
 
 # Env
 .env
