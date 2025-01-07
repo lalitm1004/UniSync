@@ -22,14 +22,14 @@ class ERPCredentials:
 
         if not netid or not password:
             raise ValueError("Missing cresentials. Ensure SNU_NETID and SNU_PASSWORD are set in your environment variables or .env file.")
-    
+
         return cls(netid=netid, password=password)
 
 class SNUERPScraper:
     # url constants
     LOGIN_URL = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/?cmd=login"
     WEEKLY_SCHEDULE_URL = "https://prodweb.snu.in/psp/CSPROD_1/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_SCHD_W"
-    
+
     def __init__(self, headless: bool = True, timeout_sec: int = 15) -> None:
         self.timeout_sec = timeout_sec
         self.driver = self._initialize_driver(headless)
@@ -49,7 +49,7 @@ class SNUERPScraper:
         netid_input = self.driver.find_element(By.ID, "userid")
         password_input = self.driver.find_element(By.ID, "pwd")
         submit_button = self.driver.find_element(By.CLASS_NAME, "psloginbutton")
-        
+
         netid_input.clear()
         netid_input.send_keys(credentials.netid)
         password_input.clear()
@@ -60,7 +60,7 @@ class SNUERPScraper:
             self.wait.until(lambda driver: driver.current_url != self.LOGIN_URL)
         except TimeoutException:
             raise RuntimeError("Login appears to have failed. Please check your credentials.")
-    
+
     def _get_schedule_html(self) -> str:
         self.driver.get(self.WEEKLY_SCHEDULE_URL)
         self.driver.switch_to.frame(self.driver.find_element(By.ID, "ptifrmtgtframe"))
@@ -77,7 +77,7 @@ class SNUERPScraper:
             return self._get_schedule_html()
         finally:
             self.driver.quit()
-    
+
 def main():
     """test the scraper"""
     try:
