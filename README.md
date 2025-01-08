@@ -18,7 +18,7 @@ Other sensitive information used to persist sessions and calendars are stored un
 
 ### In Terminal
 ```bash
-$ D:/devEnv/projects/UniSync/.venv/Scripts/python.exe d:/devEnv/projects/UniSync/src/main.py
+$ python src/main.py
 
 DevTools listening on ...
 [Scraping ERP Data] |█████████████████████████| 100.00%
