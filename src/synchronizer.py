@@ -71,19 +71,32 @@ class CalendarSynchronizer:
         creds = None
 
         if self.TOKEN_PATH.exists():
-            creds = Credentials.from_authorized_user_file(
-                str(self.TOKEN_PATH), self.SCOPES
-            )
+            creds = Credentials.from_authorized_user_file(self.TOKEN_PATH, self.SCOPES)
 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                if self.TOKEN_PATH.exists():
+                    self.TOKEN_PATH.unlink()
+
                 oauth_config = GoogleOAuthConfig.from_env()
                 flow = InstalledAppFlow.from_client_config(
-                    oauth_config.to_client_config(), self.SCOPES
+                    oauth_config.to_client_config(),
+                    self.SCOPES,
+                    redirect_uri="http://localhost",
                 )
-                creds = flow.run_local_server(port=0)
+
+                flow.oauth2session.fetch_token_kwargs = {
+                    "client_secret": oauth_config.client_secret,
+                }
+
+                creds = flow.run_local_server(
+                    port=0,
+                    access_type="offline",
+                    prompt="consent",
+                    include_granted_scopes="true",
+                )
 
             # Save the credentials
             self.TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -92,7 +105,7 @@ class CalendarSynchronizer:
 
         return creds
 
-    def _get_week_bounds(self) -> Tuple[str, str]:
+    def _get_week_bounds(self, target_next_week: bool = False) -> Tuple[str, str]:
         tz = pytz.timezone(self.TIMEZONE)
         now = datetime.datetime.now(tz)
 
@@ -103,6 +116,9 @@ class CalendarSynchronizer:
             seconds=now.second,
             microseconds=now.microsecond,
         )
+
+        if target_next_week:
+            start += datetime.timedelta(days=7)
 
         end = start + datetime.timedelta(days=6, hours=23, minutes=59, seconds=59)
 
@@ -173,16 +189,20 @@ class CalendarSynchronizer:
             },
         }
 
-    def synchronize_schedule(self, schedule: Dict[int, List[ScheduleEntry]]) -> None:
+    def synchronize_schedule(
+        self, schedule: Dict[int, List[ScheduleEntry]], target_next_week: bool = False
+    ) -> None:
         try:
             calendar_id = self._get_or_create_calendar()
-            self._clear_existing_events(calendar_id)
-            self._create_new_events(calendar_id, schedule)
+            self._clear_existing_events(calendar_id, target_next_week)
+            self._create_new_events(calendar_id, schedule, target_next_week)
         except Exception as e:
             raise RuntimeError(f"Failed to synchronize schedule: {str(e)}")
 
-    def _clear_existing_events(self, calendar_id: str) -> None:
-        start_time, end_time = self._get_week_bounds()
+    def _clear_existing_events(
+        self, calendar_id: str, target_next_week: bool = False
+    ) -> None:
+        start_time, end_time = self._get_week_bounds(target_next_week)
 
         events = []
         page_token = None
@@ -209,7 +229,10 @@ class CalendarSynchronizer:
             progress_bar("Clearing Existing Events", i, len(events))
 
     def _create_new_events(
-        self, calendar_id: str, schedule: Dict[int, List[ScheduleEntry]]
+        self,
+        calendar_id: str,
+        schedule: Dict[int, List[ScheduleEntry]],
+        target_next_week: bool = False,
     ) -> None:
         days = {
             0: "Monday",
@@ -220,15 +243,20 @@ class CalendarSynchronizer:
             5: "Saturday",
             6: "Sunday",
         }
+        tz = pytz.timezone(self.TIMEZONE)
+        base_date = datetime.datetime.now(tz)
 
-        base_date = datetime.datetime.now(pytz.timezone(self.TIMEZONE))
+        if target_next_week:
+            base_date += datetime.timedelta(days=7)
 
         for day, entries in schedule.items():
             for i, entry in enumerate(entries, 1):
                 event = self._create_event(entry, day, base_date)
-                self.service.events().insert(
-                    calendarId=calendar_id, body=event
-                ).execute()
+                result = (
+                    self.service.events()
+                    .insert(calendarId=calendar_id, body=event)
+                    .execute()
+                )
                 progress_bar(f"Creating {days[day]} Events", i, len(entries))
 
 
@@ -243,7 +271,7 @@ def main():
         schedule = ScheduleParser.parse_schedule_html(html_str)
 
         calendar_synchronizer = CalendarSynchronizer()
-        calendar_synchronizer.synchronize_schedule(schedule)
+        calendar_synchronizer.synchronize_schedule(schedule, False)
     except Exception as e:
         print(f"Error: {str(e)}")
 
