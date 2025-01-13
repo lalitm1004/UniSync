@@ -51,3 +51,7 @@ cd UniSync
 
 # Usage
 Just run this script at the start of each week to synchronize your schedule. Enjoy!
+
+# To do
+- [ ] Add color options for entries (course code wise, component wise)
+- [ ] Add title options for entries (course code wise)
