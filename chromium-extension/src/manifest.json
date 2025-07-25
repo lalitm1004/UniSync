@@ -28,12 +28,17 @@
                 "scripts/contentScript.js"
             ],
             "matches": [
-                "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL",
-                "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL?"
-            ]
+                "https://prodweb.snu.in/psc/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL",
+                "https://prodweb.snu.in/psc/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL?"
+            ],
+            "run_at": "document_idle",
+            "all_frames": true
         }
     ],
     "background": {
         "service_worker": "scripts/serviceWorker.js"
-    }
+    },
+    "host_permissions": [
+        "https://prodweb.snu.in/*"
+    ]
 }
