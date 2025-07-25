@@ -1,0 +1,18 @@
+{
+  "name": "unisync-chromium-extension",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build && node move-html.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/chrome": "^0.1.1",
+    "@types/node": "^24.1.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.6",
+    "vite-plugin-static-copy": "^3.1.1"
+  }
+}
