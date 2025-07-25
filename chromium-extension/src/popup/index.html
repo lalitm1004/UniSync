@@ -9,10 +9,30 @@
 </head>
 
 <body>
+    <main class="h-full w-full flex flex-col justify-between items-center gap-2 py-2">
+        <hgroup>
+            <h1 class="font-amulya font-bold italic text-3xl">UniSync</h1>
+        </hgroup>
 
-    <button id="capture-schedule">
-        Capture
-    </button>
+        <button id="capture-schedule"
+            class="flex gap-2 px-4 py-2 border-2 border-neutral-800 rounded-md hover:bg-stone-900 transition-colors duration-300 cursor-pointer">
+            Capture Schedule
+        </button>
+
+        <button id="open-guide"
+            class="group flex gap-1 items-center cursor-pointer text-neutral-600 hover:underline underline-offset-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"
+                class="h-[12px] aspect-square stroke-2 stroke-current fill-none lucide lucide-info-icon lucide-info">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+            </svg>
+
+            <p class="translate-y-[1px]">
+                How it works
+            </p>
+        </button>
+    </main>
 
     <script type="module" src="./scripts/index.ts"></script>
 </body>

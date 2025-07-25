@@ -1,1 +1,51 @@
 @import "tailwindcss";
+
+@theme {
+    --font-amulya: 'Amulya', sans-serif;
+    --font-quattro: 'Quattro', sans-serif;
+
+    --font-weight-thin: 100;
+    --font-weight-extralight: 200;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --font-weight-black: 900;
+}
+
+@layer base {
+    body {
+        @apply bg-stone-950 text-amber-50;
+        @apply h-[130px] w-[250px];
+    }
+
+    main {
+        @apply font-quattro;
+    }
+}
+
+@font-face {
+    font-family: 'Amulya';
+    src: url('../../assets/fonts/Amulya-Variable.woff2') format('woff2');
+    font-weight: 300 700;
+    font-display: swap;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Amulya';
+    src: url('../../assets/fonts/Amulya-VariableItalic.woff2') format('woff2');
+    font-weight: 300 700;
+    font-display: swap;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Quattro';
+    src: url('../../assets/fonts/iAWriterQuattroV.ttf') format('truetype');
+    font-weight: 400 700;
+    font-display: swap;
+    font-style: normal;
+}
