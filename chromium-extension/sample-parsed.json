@@ -1,0 +1,131 @@
+[
+    {
+        "course_code": "CSD304",
+        "course_title": "Computer Networks",
+        "course_sections": [
+            {
+                "section": "L1",
+                "component": "LECTURE",
+                "timings": [
+                    {
+                        "start_time": "2:00PM",
+                        "end_time": "3:25PM",
+                        "days": [
+                            "TUESDAY",
+                            "THURSDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "D217"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            },
+            {
+                "section": "P1",
+                "component": "PRACTICAL",
+                "timings": [
+                    {
+                        "start_time": "1:00PM",
+                        "end_time": "2:55PM",
+                        "days": [
+                            "MONDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "D313"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            }
+        ]
+    },
+    {
+        "course_code": "CSD311",
+        "course_title": "Artificial Intelligence",
+        "course_sections": [
+            {
+                "section": "L1",
+                "component": "LECTURE",
+                "timings": [
+                    {
+                        "start_time": "5:00PM",
+                        "end_time": "6:25PM",
+                        "days": [
+                            "TUESDAY",
+                            "THURSDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "D217"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            },
+            {
+                "section": "P1",
+                "component": "PRACTICAL",
+                "timings": [
+                    {
+                        "start_time": "1:00PM",
+                        "end_time": "2:55PM",
+                        "days": [
+                            "WEDNESDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "D317"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            }
+        ]
+    },
+    {
+        "course_code": "CSD319",
+        "course_title": "Design and Anal. of Algorithms",
+        "course_sections": [
+            {
+                "section": "L1",
+                "component": "LECTURE",
+                "timings": [
+                    {
+                        "start_time": "10:30AM",
+                        "end_time": "11:55AM",
+                        "days": [
+                            "TUESDAY",
+                            "THURSDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "D217"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            },
+            {
+                "section": "P1",
+                "component": "PRACTICAL",
+                "timings": [
+                    {
+                        "start_time": "1:00PM",
+                        "end_time": "2:55PM",
+                        "days": [
+                            "FRIDAY"
+                        ]
+                    }
+                ],
+                "rooms": [
+                    "C309"
+                ],
+                "start_date": "2025-08-17",
+                "end_date": "2025-11-28"
+            }
+        ]
+    }
+]

@@ -5,75 +5,53 @@ import extractDates from "./utils/extractDates";
 import extractRooms from "./utils/extractRooms";
 import extractTimings from "./utils/extractTimings";
 
+const getTextContent = (element: Element | null): string =>
+    element?.textContent?.trim() ?? "";
+
 const extractSchedule = (): Course[] => {
-    const courseDivs = document.querySelectorAll('div[id*="DERIVED_REGFRM1_DESCR20"]')
-    const courses: Course[] = [];
-    const misc: string[] = [];
+    const courseDivs = Array.from(document.querySelectorAll('div[id*="DERIVED_REGFRM1_DESCR20"]'));
 
-    courseDivs.forEach((div) => {
-        const statusSpan = div.querySelector('span[id^="STATUS"]');
-        if (!statusSpan || statusSpan.textContent?.trim().toLowerCase() !== 'enrolled') {
-            return;
-        }
+    return courseDivs
+        .filter(div => getTextContent(div.querySelector('span[id^="STATUS"]')).toLowerCase() === 'enrolled')
+        .map(div => {
+            const headerText = getTextContent(div.querySelector('td.PAGROUPDIVIDER'));
+            if (!headerText) return null;
 
+            const { course_code, course_title } = extractCourseInfo(headerText);
 
-        const courseHeader = div.querySelector('td.PAGROUPDIVIDER');
-        if (!courseHeader || !courseHeader.textContent?.trim()) {
-            return;
-        };
+            const sectionRows = Array.from(div.querySelectorAll('tr[id^="trCLASS_MTG_VW"]'));
 
-        const { course_code, course_title } = extractCourseInfo(courseHeader.textContent?.trim());
-        misc.push(course_code);
+            const course_sections: CourseSection[] = sectionRows.flatMap(row => {
+                const section = getTextContent(row.querySelector('a[id^="MTG_SECTION"]'));
+                const componentRaw = getTextContent(row.querySelector('span[id^="MTG_COMP"]'));
+                const timingsRaw = getTextContent(row.querySelector('span[id^="MTG_SCHED"]'));
+                const roomsRaw = getTextContent(row.querySelector('span[id^="MTG_LOC"]'));
+                const datesRaw = getTextContent(row.querySelector('span[id^="MTG_DATES"]'));
 
-        const course_sections: CourseSection[] = [];
-        const sectionRows = div.querySelectorAll('tr[id^="trCLASS_MTG_VW"]');
+                const component = extractComponent(componentRaw);
+                if (!section || !component || !datesRaw) return [];
 
-        sectionRows.forEach((row) => {
-            const sectionAnchor = row.querySelector('a[id^="MTG_SECTION"]');
-            if (!sectionAnchor || !sectionAnchor.textContent?.trim()) {
-                return;
-            }
-            const section = sectionAnchor.textContent.trim();
+                const timings = extractTimings(timingsRaw);
+                const rooms = extractRooms(roomsRaw);
+                const { start_date, end_date } = extractDates(datesRaw);
 
-            const componentSpan = row.querySelector('span[id^="MTG_COMP"]');
-            if (!componentSpan || !componentSpan.textContent?.trim()) {
-                return;
-            }
-            const component = extractComponent(componentSpan.textContent.trim());
-            if (!component) {
-                return;
-            }
+                return [{
+                    section,
+                    component,
+                    timings,
+                    rooms,
+                    start_date,
+                    end_date
+                }];
+            });
 
-            const timingsSpan = row.querySelector('span[id^="MTG_SCHED"]')!;
-            const timings = extractTimings(timingsSpan?.textContent?.trim() ?? "");
-
-            const roomsSpan = row.querySelector('span[id^="MTG_LOC"]')!;
-            const rooms = extractRooms(roomsSpan.textContent?.trim() ?? "");
-
-            const datesSpan = row.querySelector('span[id^="MTG_DATES"]');
-            if (!datesSpan || !datesSpan.textContent?.trim()) {
-                return;
-            }
-            const { start_date, end_date } = extractDates(datesSpan.textContent.trim());
-
-            course_sections.push({
-                section,
-                component,
-                timings,
-                rooms,
-                start_date,
-                end_date
-            })
-        });
-
-        courses.push({
-            course_code,
-            course_title,
-            course_sections
-        });
-    });
-
-    return courses;
+            return {
+                course_code,
+                course_title,
+                course_sections
+            };
+        })
+        .filter((course): course is Course => course !== null);
 }
 
 const main = () => {
