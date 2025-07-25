@@ -5,6 +5,7 @@ interface ImportMetaEnv {
     readonly VITE_GUIDE_URL: string;
     readonly VITE_BACKEND_URL: string;
     readonly VITE_HANDLER_URL: string;
+    readonly VITE_API_ACCESS_KEY: string;
 }
 
 interface ImportMeta {
