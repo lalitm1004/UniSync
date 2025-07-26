@@ -1,1 +1,1 @@
-# UniSync FrontEnd
+# SvelteKit + Supabase Template

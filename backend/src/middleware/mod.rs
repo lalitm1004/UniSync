@@ -39,6 +39,7 @@ async fn extension_access_checker(
     }
 }
 
+#[allow(dead_code)]
 #[derive(SecurityScheme)]
 #[oai(
     ty = "bearer",
