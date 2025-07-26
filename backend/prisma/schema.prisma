@@ -8,11 +8,24 @@ datasource db {
 }
 
 model UserProfile {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String
-  email         String   @unique
-  isBlacklisted Boolean  @default(false) @map("is_blacklisted")
-  createdAt     DateTime @default(dbgenerated("now()")) @map("created_at")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
+  ///
+  Token     Token?
 
   @@map("userprofile")
+}
+
+model Token {
+  userId       String      @id @map("user_id") @db.Uuid
+  accessToken  String      @map("access_token")
+  refreshToken String      @map("refresh_token")
+  createdAt    DateTime    @default(dbgenerated("now()")) @map("created_at")
+  expiresAt    DateTime    @map("expires_at")
+  ///
+  user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("token")
 }
