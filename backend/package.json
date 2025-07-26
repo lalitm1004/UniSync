@@ -1,9 +1,6 @@
 {
   "scripts": {
-    "db:start": "npx supabase start",
-    "db:stop": "npx supabase stop",
-    "db:reset": "npx supabase db reset",
-    "db:sync": "npm run db:start && npm run db:reset && npx prisma db push && npx prisma db seed"
+    "db:sync": "npx prisma db push && npx prisma db seed"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -12,7 +9,6 @@
     "@prisma/client": "^6.12.0",
     "@types/node": "^24.1.0",
     "prisma": "^6.12.0",
-    "supabase": "^2.31.8",
     "tsx": "^4.20.3"
   }
 }
