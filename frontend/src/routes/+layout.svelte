@@ -33,6 +33,7 @@
 				newSession?.expires_at !== session?.expires_at ||
 				event === "SIGNED_OUT"
 			) {
+				UserStore.set(null);
 				invalidateAll();
 			}
 

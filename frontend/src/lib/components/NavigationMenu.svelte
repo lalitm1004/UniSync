@@ -8,16 +8,31 @@
             display: "Home",
             href: "/",
             icon: houseSvg,
+            visible: true,
         },
         {
             display: "UniSync",
             href: "/unisync",
             icon: calendarSyncSvg,
+            visible: true,
         },
         {
             display: "Guide",
             href: "/guide",
             icon: infoSvg,
+            visible: true,
+        },
+        {
+            display: "Profile",
+            href: "/profile",
+            icon: userSvg,
+            visible: true,
+        },
+        {
+            display: "Error",
+            href: "/error",
+            icon: userSvg,
+            visible: false,
         },
     ];
 
@@ -53,21 +68,26 @@
                         <div {...props} transition:slide>
                             <DropdownMenu.Group class={`flex flex-col gap-1`}>
                                 {#each internalAnchors as anchor, idx (idx)}
-                                    {@const href = anchor.href}
-                                    {@const pathname = page.url.pathname}
+                                    {#if anchor.visible}
+                                        {@const href = anchor.href}
+                                        {@const pathname = page.url.pathname}
 
-                                    <DropdownMenu.Item class={`group`}>
-                                        <Button.Root
-                                            {href}
-                                            data-current={pathname === href ||
-                                                pathname.startsWith(`${href}/`)}
-                                            class={`flex items-center justify-between mx-2 px-2 py-1 data-[current="true"]:bg-neutral-800/50 data-[current="false"]:group-hover:bg-neutral-800/50 rounded-md outline-0 transition-colors duration-300`}
-                                        >
-                                            <p>{anchor.display}</p>
+                                        <DropdownMenu.Item class={`group`}>
+                                            <a
+                                                {href}
+                                                data-current={pathname ===
+                                                    href ||
+                                                    pathname.startsWith(
+                                                        `${href}/`,
+                                                    )}
+                                                class={`flex items-center justify-between mx-2 px-2 py-1 data-[current="true"]:bg-neutral-800/50 data-[current="false"]:group-hover:bg-neutral-800/50 rounded-md outline-0 transition-colors duration-300`}
+                                            >
+                                                <p>{anchor.display}</p>
 
-                                            {@render anchor.icon()}
-                                        </Button.Root>
-                                    </DropdownMenu.Item>
+                                                {@render anchor.icon()}
+                                            </a>
+                                        </DropdownMenu.Item>
+                                    {/if}
                                 {/each}
                             </DropdownMenu.Group>
                         </div>
@@ -136,5 +156,19 @@
     >
         <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" />
         <path d="M12 8h.01" />
+    </svg>
+{/snippet}
+
+{#snippet userSvg()}
+    <svg
+        class={`h-[20px] aspect-square stroke-current stroke-2 lucide lucide-user`}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
     </svg>
 {/snippet}
