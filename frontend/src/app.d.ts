@@ -25,6 +25,7 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+	type Device = 'desktop' | 'mobile';
 }
 
-export {};
+export { };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "$lib/styles/app.css";
 	import { invalidateAll } from "$app/navigation";
 	import {
 		SessionStore,
@@ -6,13 +7,22 @@
 		UserStore,
 	} from "$lib/stores/SupaStore.js";
 	import { onMount } from "svelte";
-	import "$lib/styles/app.css";
 	import { fetchWithAuthBrowser } from "$lib/utils/fetchWithAuth.js";
 	import { addToast, ToastStore } from "$lib/stores/ToastStore.js";
 	import Toast from "$lib/components/Toast.svelte";
+	import { setDevice } from "$lib/stores/DeviceStore.js";
 
 	let { data, children } = $props();
 	let { supabase, session, user } = $derived(data);
+
+	const handleDevice = () => {
+		const device: Device = window.matchMedia("(max-width: 767px)").matches
+			? "mobile"
+			: "desktop";
+
+		document.documentElement.dataset.device = device;
+		setDevice(device);
+	};
 
 	onMount(() => {
 		const {
@@ -54,20 +64,33 @@
 			}
 		});
 
+		handleDevice();
+
 		SessionStore.set(session);
 		SupaStore.set(supabase);
 		UserStore.set(user);
-
-		addToast({
-			message: "sex",
-			type: "danger",
-		});
 
 		return () => subscription.unsubscribe();
 	});
 </script>
 
-{@render children()}
+<svelte:window onresize={handleDevice} />
+
+<div class={`mobile:hidden`}>
+	{@render children()}
+</div>
+
+<div class={`desktop:hidden h-dvh w-dvw bg-stone-950 grid place-items-center`}>
+	<div
+		class={`max-w-[80%] flex flex-col items-center p-4 border-2 border-neutral-800 rounded-md`}
+	>
+		<h1 class={`font-amulya font-bold italic text-3xl`}>UniSync</h1>
+
+		<p class={`text-center tracking-tighter`}>
+			Please use a desktop device. Mobile displays are not supported
+		</p>
+	</div>
+</div>
 
 <ul>
 	{#each $ToastStore as toast (toast.id)}

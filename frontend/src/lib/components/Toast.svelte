@@ -14,7 +14,7 @@
     };
 </script>
 
-<div
+<li
     transition:fly={{ y: "200%" }}
     class={twMerge(
         `z-[100] fixed bottom-2 left-1/2 -translate-x-1/2 min-w-[20%] max-w-fit flex justify-center items-center gap-2 py-2 px-4 overflow-hidden rounded-lg ${toastStyles[type!]}`,
@@ -32,7 +32,7 @@
     {/if}
 
     <p>{message}</p>
-</div>
+</li>
 
 {#snippet successSvg()}
     <svg
