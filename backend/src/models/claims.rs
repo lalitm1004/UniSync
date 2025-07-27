@@ -5,4 +5,5 @@ use serde::{Deserialize, Serialize};
 pub struct Claims {
     #[serde(rename = "sub")]
     pub user_id: String,
+    pub email: String,
 }

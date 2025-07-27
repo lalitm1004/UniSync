@@ -2,7 +2,7 @@ use poem::{EndpointExt, Route, Server, listener::TcpListener, middleware::Cors};
 use poem_openapi::OpenApiService;
 use std::process::ExitCode;
 
-use unisync_backend::{AppState, CacheApi};
+use unisync_backend::{AppState, CacheApi, TokenApi};
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -16,8 +16,8 @@ async fn main() -> ExitCode {
     };
     println!("Successfully intiialized app state");
 
-    let api_service =
-        OpenApiService::new(CacheApi, "unisync-backend", "1.0").server("http://localhost:3000");
+    let api_service = OpenApiService::new((CacheApi, TokenApi), "unisync-backend", "1.0")
+        .server("http://localhost:3000");
     let ui = api_service.swagger_ui();
 
     let app = Route::new()

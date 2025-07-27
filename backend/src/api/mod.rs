@@ -1,11 +1,15 @@
 mod cache;
 pub use cache::CacheApi;
 
+mod token;
+pub use token::TokenApi;
+
 use poem_openapi::{Object, Tags};
 
 #[derive(Tags)]
 enum ApiTags {
     Cache,
+    Token,
 }
 
 #[derive(Object)]

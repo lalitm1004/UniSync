@@ -19,6 +19,8 @@ pub struct Config {
     pub extension_access_key: String,
     pub schedule_cleanup_after: u64,
     pub schedule_cache_max_size: usize,
+    pub google_client_id: String,
+    pub google_client_secret: String,
 }
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
@@ -30,5 +32,7 @@ pub static CONFIG: Lazy<Config> = Lazy::new(|| {
         extension_access_key: env_var!("EXTENSION_ACCESS_KEY"),
         schedule_cleanup_after: env_var!("SCHEDULE_CLEANUP_AFTER", u64),
         schedule_cache_max_size: env_var!("SCHEDULE_CACHE_MAX_SIZE", usize),
+        google_client_id: env_var!("GOOGLE_CLIENT_ID"),
+        google_client_secret: env_var!("GOOGLE_CLIENT_SECRET"),
     }
 });

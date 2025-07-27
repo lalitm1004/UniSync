@@ -8,17 +8,17 @@ datasource db {
 }
 
 model UserProfile {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
-  email     String   @unique
-  createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
+  email     String       @unique
+  createdAt DateTime     @default(dbgenerated("now()")) @map("created_at")
   ///
-  Token     Token?
+  Token     GoogleToken?
 
   @@map("userprofile")
 }
 
-model Token {
+model GoogleToken {
   userId       String      @id @map("user_id") @db.Uuid
   accessToken  String      @map("access_token")
   refreshToken String      @map("refresh_token")
@@ -27,5 +27,5 @@ model Token {
   ///
   user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("token")
+  @@map("googletoken")
 }

@@ -68,8 +68,8 @@ impl CacheApi {
     #[oai(path = "/schedule-cache/:id", method = "get")]
     async fn retrieve_from_cache(
         &self,
-        state: Data<&AppState>,
         id: Path<String>,
+        state: Data<&AppState>,
         _extension_auth: ExtensionAuth,
     ) -> Result<GetCacheResponse> {
         let schedule_cache_manager = state.schedule_cache_manager.clone();

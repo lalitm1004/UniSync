@@ -1,5 +1,5 @@
 mod api;
-pub use api::CacheApi;
+pub use api::{CacheApi, TokenApi};
 
 mod config;
 pub use config::CONFIG;
