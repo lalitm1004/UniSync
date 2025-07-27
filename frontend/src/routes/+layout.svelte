@@ -11,6 +11,7 @@
 	import { addToast, ToastStore } from "$lib/stores/ToastStore.js";
 	import Toast from "$lib/components/Toast.svelte";
 	import { setDevice } from "$lib/stores/DeviceStore.js";
+	import Header from "$lib/components/Header.svelte";
 
 	let { data, children } = $props();
 	let { supabase, session, user } = $derived(data);
@@ -77,7 +78,15 @@
 <svelte:window onresize={handleDevice} />
 
 <div class={`mobile:hidden`}>
+	<Header />
+
 	{@render children()}
+
+	<ul>
+		{#each $ToastStore as toast (toast.id)}
+			<Toast {toast} />
+		{/each}
+	</ul>
 </div>
 
 <div class={`desktop:hidden h-dvh w-dvw bg-stone-950 grid place-items-center`}>
@@ -91,9 +100,3 @@
 		</p>
 	</div>
 </div>
-
-<ul>
-	{#each $ToastStore as toast (toast.id)}
-		<Toast {toast} />
-	{/each}
-</ul>
