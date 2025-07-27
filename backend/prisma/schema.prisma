@@ -8,12 +8,13 @@ datasource db {
 }
 
 model UserProfile {
-  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  email     String       @unique
-  createdAt DateTime     @default(dbgenerated("now()")) @map("created_at")
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  email       String       @unique
+  timesSynced Int          @default(0) @map("times_synced")
+  createdAt   DateTime     @default(dbgenerated("now()")) @map("created_at")
   ///
-  Token     GoogleToken?
+  Token       GoogleToken?
 
   @@map("userprofile")
 }
