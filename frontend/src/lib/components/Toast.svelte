@@ -7,7 +7,7 @@
     const { message, type, toastClass } = $derived(toast);
 
     const toastStyles = {
-        default: "apply-card",
+        default: "border-2 border-neutral-800",
         success: "bg-green-600 text-amber-50",
         warning: "bg-amber-400 text-neutral-900",
         danger: "bg-red-600 text-amber-50",
@@ -17,7 +17,7 @@
 <li
     transition:fly={{ y: "200%" }}
     class={twMerge(
-        `z-[100] fixed bottom-2 left-1/2 -translate-x-1/2 min-w-[20%] max-w-fit flex justify-center items-center gap-2 py-2 px-4 overflow-hidden rounded-lg ${toastStyles[type!]}`,
+        `z-[100] fixed bottom-2 left-1/2 -translate-x-1/2 w-fit flex justify-center items-center gap-2 py-2 px-4 overflow-hidden rounded-md ${toastStyles[type!]}`,
         toastClass,
     )}
 >
