@@ -54,6 +54,22 @@ const extractSchedule = (): Course[] => {
         .filter((course): course is Course => course !== null);
 }
 
+const waitForScheduleToLoad = () => {
+    const observer = new MutationObserver((_, obs) => {
+        const courseDivs = document.querySelectorAll('div[id*="DERIVED_REGFRM1_DESCR20"]');
+
+        if (courseDivs.length > 0) {
+            obs.disconnect();
+            main();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
 const main = () => {
     const data = extractSchedule();
     chrome.runtime.sendMessage({
@@ -62,4 +78,4 @@ const main = () => {
     });
 }
 
-main();
+waitForScheduleToLoad();
