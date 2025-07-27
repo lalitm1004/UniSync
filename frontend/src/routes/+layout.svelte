@@ -47,7 +47,8 @@
 							message: "Authentication Failed. Please try again",
 							type: "danger",
 						});
-						invalidateAll();
+
+						supabase.auth.signOut();
 					}
 				})();
 			}
