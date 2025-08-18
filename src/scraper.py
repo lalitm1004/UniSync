@@ -31,24 +31,28 @@ class ERPCredentials:
 
 
 class SNUERPScraper:
-    # url constants
     LOGIN_URL = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/?cmd=login"
-    WEEKLY_SCHEDULE_URL = "https://prodweb.snu.in/psp/CSPROD_1/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_SCHD_W"
+    WEEKLY_SCHEDULE_URL = "https://prodweb.snu.in/psc/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL"
 
     def __init__(self, headless: bool = True, timeout_sec: int = 15) -> None:
         self.timeout_sec = timeout_sec
-        self.driver = self._initialize_driver(headless)
+        self.driver = self.__initialize_driver(headless)
         self.wait = WebDriverWait(self.driver, timeout=timeout_sec)
 
-    def _initialize_driver(self, headless: bool) -> webdriver.Chrome:
+    def __initialize_driver(self, headless: bool) -> webdriver.Chrome:
         options = Options()
+
         if headless:
             options.add_argument("--headless=new")
+
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+
+        options.binary_location = "/usr/bin/brave-browser"
+
         return webdriver.Chrome(options=options)
 
-    def _login(self, credentials: ERPCredentials) -> None:
+    def __login(self, credentials: ERPCredentials) -> None:
         self.driver.get(self.LOGIN_URL)
 
         netid_input = self.driver.find_element(By.ID, "userid")
@@ -68,21 +72,24 @@ class SNUERPScraper:
                 "Login appears to have failed. Please check your credentials."
             )
 
-    def _get_schedule_html(self) -> str:
+    def __get_html(self) -> str:
         self.driver.get(self.WEEKLY_SCHEDULE_URL)
-        self.driver.switch_to.frame(self.driver.find_element(By.ID, "ptifrmtgtframe"))
 
-        schedule_html = self.driver.find_element(By.ID, "WEEKLY_SCHED_HTMLAREA")
-        if schedule_html is None:
-            raise RuntimeError("Unable to grab weekly schedule html.")
-        return schedule_html.get_attribute("outerHTML")
+        course_divs = self.driver.find_elements(
+            By.CSS_SELECTOR, 'div[id*="DERIVED_REGFRM1_DESCR20"]'
+        )
+        if not course_divs:
+            raise RuntimeError("Unable to grab course schedule divs")
+
+        html_snippets = [cd.get_attribute("outerHTML") for cd in course_divs]
+        return "\n".join([h for h in html_snippets if h])
 
     def get_weekly_schedule_html(self) -> str:
         progress_bar("Scraping ERP Data", 0, 1)
         try:
             credentials = ERPCredentials.from_env()
-            self._login(credentials)
-            return self._get_schedule_html()
+            self.__login(credentials)
+            return self.__get_html()
         finally:
             self.driver.quit()
             progress_bar("Scraping ERP Data", 1, 1)
