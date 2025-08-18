@@ -48,7 +48,6 @@ class GoogleOAuthConfig:
 
 
 class CalendarSynchronizer:
-
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
     CALENDAR_SUMMARY = "UniSync v2.0"
     TIMEZONE = "Asia/Kolkata"
