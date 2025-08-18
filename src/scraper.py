@@ -115,7 +115,7 @@ def main():
     try:
         scraper = SNUERPScraper(headless=False)
         schedule_html = scraper.get_weekly_schedule_html()
-        print(schedule_html)
+        print(schedule_html[0])
     except Exception as e:
         print(f"Error occured: {str(e)}")
 
