@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import List, Optional
 from dotenv import load_dotenv
 
 from selenium import webdriver
@@ -30,6 +31,18 @@ class ERPCredentials:
         return cls(netid=netid, password=password)
 
 
+@dataclass
+class BrowserOptions:
+    binary: Optional[str]
+
+    @classmethod
+    def from_env(cls) -> "BrowserOptions":
+        load_dotenv()
+        binary = os.getenv("SELENIUM_BROWSER_BINARY")
+
+        return cls(binary=binary)
+
+
 class SNUERPScraper:
     LOGIN_URL = "https://prodweb.snu.in/psp/CSPROD/EMPLOYEE/HRMS/?cmd=login"
     WEEKLY_SCHEDULE_URL = "https://prodweb.snu.in/psc/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL"
@@ -48,7 +61,9 @@ class SNUERPScraper:
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
 
-        options.binary_location = "/usr/bin/brave-browser"
+        browser_options = BrowserOptions.from_env()
+        if bin := browser_options.binary:
+            options.binary_location = bin
 
         return webdriver.Chrome(options=options)
 
@@ -72,7 +87,7 @@ class SNUERPScraper:
                 "Login appears to have failed. Please check your credentials."
             )
 
-    def __get_html(self) -> str:
+    def __get_html(self) -> List[str]:
         self.driver.get(self.WEEKLY_SCHEDULE_URL)
 
         course_divs = self.driver.find_elements(
@@ -82,9 +97,9 @@ class SNUERPScraper:
             raise RuntimeError("Unable to grab course schedule divs")
 
         html_snippets = [cd.get_attribute("outerHTML") for cd in course_divs]
-        return "\n".join([h for h in html_snippets if h])
+        return [h for h in html_snippets if h]
 
-    def get_weekly_schedule_html(self) -> str:
+    def get_weekly_schedule_html(self) -> List[str]:
         progress_bar("Scraping ERP Data", 0, 1)
         try:
             credentials = ERPCredentials.from_env()
@@ -100,7 +115,7 @@ def main():
     try:
         scraper = SNUERPScraper(headless=False)
         schedule_html = scraper.get_weekly_schedule_html()
-        print(schedule_html[:500] + "...")
+        print(schedule_html)
     except Exception as e:
         print(f"Error occured: {str(e)}")
 
