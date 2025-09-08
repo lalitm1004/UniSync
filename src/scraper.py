@@ -1,4 +1,6 @@
 import os
+import tempfile
+import shutil
 from dataclasses import dataclass
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -49,8 +51,16 @@ class SNUERPScraper:
 
     def __init__(self, headless: bool = True, timeout_sec: int = 15) -> None:
         self.timeout_sec = timeout_sec
+        self.__temp_profile_dir = tempfile.mkdtemp(prefix="selenium_")
         self.driver = self.__initialize_driver(headless)
         self.wait = WebDriverWait(self.driver, timeout=timeout_sec)
+
+    def __del__(self) -> None:
+        try:
+            self.driver.quit()
+        except Exception:
+            pass
+        shutil.rmtree(self.__temp_profile_dir, ignore_errors=True)
 
     def __initialize_driver(self, headless: bool) -> webdriver.Chrome:
         options = Options()
@@ -60,6 +70,7 @@ class SNUERPScraper:
 
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        options.add_argument(f"--user-data-dir={self.__temp_profile_dir}")
 
         browser_options = BrowserOptions.from_env()
         if bin := browser_options.binary:
