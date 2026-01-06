@@ -59,6 +59,22 @@ def write_courses_to_json(
         json.dump(courses_date, f, indent=4, ensure_ascii=False)
 
 
+def read_courses_from_json(path: Union[str, Path] = REVIEW_FILE_PATH) -> List[Course]:
+    if isinstance(path, str):
+        path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Course file not found: {path}")
+
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if not isinstance(data, list):
+        raise ValueError("Invalid course file format: expected a list")
+
+    return [Course.model_validate(item) for item in data]
+
+
 def test() -> None:
     sample_courses = [
         Course(
@@ -121,6 +137,8 @@ def test() -> None:
     ]
 
     write_courses_to_json(sample_courses, "data/sample/sample-courses.json")
+    courses = read_courses_from_json("data/sample/sample-courses.json")
+    print(courses)
 
 
 if __name__ == "__main__":
