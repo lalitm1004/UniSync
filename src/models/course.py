@@ -4,9 +4,9 @@ import json
 from enum import StrEnum
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import Final, List, Union
 
-REVIEW_FILE_PATH = Path("data/review/review-courses.json")
+REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
 
 
 class Course(BaseModel):
