@@ -5,8 +5,8 @@ import re
 from datetime import date, time
 from enum import StrEnum
 from pathlib import Path
-from pydantic import BaseModel, Field, field_validator
-from typing import Final, List, Tuple, Union
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Final, List, Optional, Tuple, Union
 
 REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
 
@@ -18,12 +18,19 @@ class Course(BaseModel):
     course_title: str
     is_enrolled: bool = Field(default=True)
     batches: List[CourseBatch] = Field(default_factory=list)
+    course_shorthand: Optional[str] = Field(default=None)
+
+    @model_validator(mode="after")
+    def generate_course_shorthand(self) -> Course:
+        self.course_shorthand = f"{self.course_code.upper()} - {_convert_title_to_shorthand(self.course_title)}"
+        return self
 
     def pretty_str(self, indent: int = 0) -> str:
         lines = []
         prefix = "    " * indent
 
         lines.append(f"{prefix}Course: {self.course_code}")
+        lines.append(f"{prefix}Shorthand: {self.course_shorthand}")
         lines.append(f"{prefix}  Title: {self.course_title}")
         lines.append(f"{prefix}  Enrolled: {self.is_enrolled}")
 
@@ -118,6 +125,21 @@ class Days(StrEnum):
     FRIDAY = "FRIDAY"
     SATURDAY = "SATURDAY"
     SUNDAY = "SUNDAY"
+
+
+def _convert_title_to_shorthand(title: str) -> str:
+    # remove punctuation
+    title = re.sub(r"[^\w\s]", "", title)
+
+    # recursively reduce double spaces to single space
+    while "  " in title:
+        title = title.replace("  ", " ")
+
+    # split by whitespace, take first letter of each token, capitalize
+    tokens = title.split()
+    shorthand = "".join(token[0] for token in tokens if token)
+
+    return shorthand.upper()
 
 
 def write_courses_to_json(
