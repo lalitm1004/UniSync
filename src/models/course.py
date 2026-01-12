@@ -1,32 +1,107 @@
 from __future__ import annotations
 
 import json
+import re
+from datetime import date, time
 from enum import StrEnum
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import Final, List, Union
+from pydantic import BaseModel, Field, field_validator
+from typing import Final, List, Tuple, Union
 
 REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
 
+TIME_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
+
 
 class Course(BaseModel):
-    course_id: str
-    course_name: str
+    course_code: str
+    course_title: str
+    is_enrolled: bool = Field(default=True)
     batches: List[CourseBatch] = Field(default_factory=list)
+
+    def pretty_str(self, indent: int = 0) -> str:
+        lines = []
+        prefix = "    " * indent
+
+        lines.append(f"{prefix}Course: {self.course_code}")
+        lines.append(f"{prefix}  Title: {self.course_title}")
+        lines.append(f"{prefix}  Enrolled: {self.is_enrolled}")
+
+        if self.batches:
+            lines.append(f"{prefix}  Batches:")
+            for i, batch in enumerate(self.batches, 1):
+                lines.append(f"{prefix}    Batch {i}:")
+                lines.append(batch.pretty_str(indent + 3))
+        else:
+            lines.append(f"{prefix}  Batches: None")
+
+        return "\n".join(lines)
 
 
 class CourseBatch(BaseModel):
-    event_color: int = Field(ge=1, le=11)
-    component_type: ComponentType
-    batch_number: int
+    event_color: int = Field(ge=1, le=11, default=1)
+    component: Union[Tuple[ComponentType, int], str]
     timings: List[Timing] = Field(default_factory=list)
+    start_date: date
+    end_date: date
+
+    def pretty_str(self, indent: int = 0) -> str:
+        lines = []
+        prefix = "    " * indent
+
+        if isinstance(self.component, tuple):
+            comp_str = f"{self.component[0].value} {self.component[1]}"
+        else:
+            comp_str = self.component
+
+        lines.append(f"{prefix}Component: {comp_str}")
+        lines.append(f"{prefix}Color: {self.event_color}")
+        lines.append(f"{prefix}DateRange: {self.start_date} to {self.end_date}")
+
+        if self.timings:
+            lines.append(f"{prefix}Timings:")
+            for timing in self.timings:
+                lines.append(timing.pretty_str(indent + 1))
+        else:
+            lines.append(f"{prefix}Timings: None")
+
+        return "\n".join(lines)
 
 
 class Timing(BaseModel):
-    start_time: str = Field(pattern=r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
-    end_time: str = Field(pattern=r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
+    start_time: time
+    end_time: time
     days: List[Days] = Field(default_factory=list)
     venue: str
+
+    @field_validator("start_time", "end_time", mode="before")
+    def _convert_time(cls, value: str) -> time:
+        if not isinstance(value, str):
+            raise ValueError(f"Invalid type for time: {type(value)}. Expected a string")
+
+        if not TIME_RE.match(value):
+            raise ValueError(
+                f"invalid time format, expected HH:MM 24-hour, got: {value}"
+            )
+
+        hour_str, minute_str = value.split(":")
+        hour = int(hour_str)
+        minute = int(minute_str)
+
+        return time(hour, minute)
+
+    def pretty_str(self, indent: int = 0) -> str:
+        prefix = "    " * indent
+        time_str = (
+            f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
+        )
+        days_str = (
+            ", ".join(day.value.capitalize() for day in self.days)
+            if self.days
+            else "No days"
+        )
+
+        return f"{prefix}{time_str} | {days_str} | {self.venue}"
 
 
 class ComponentType(StrEnum):
@@ -73,73 +148,3 @@ def read_courses_from_json(path: Union[str, Path] = REVIEW_FILE_PATH) -> List[Co
         raise ValueError("Invalid course file format: expected a list")
 
     return [Course.model_validate(item) for item in data]
-
-
-def test() -> None:
-    sample_courses = [
-        Course(
-            course_id="CS101",
-            course_name="Introduction to Programming",
-            batches=[
-                CourseBatch(
-                    event_color=5,
-                    component_type=ComponentType.L,
-                    batch_number=1,
-                    timings=[
-                        Timing(
-                            start_time="09:00",
-                            end_time="10:30",
-                            days=[Days.MONDAY, Days.WEDNESDAY],
-                            venue="Room 101",
-                        ),
-                        Timing(
-                            start_time="12:00",
-                            end_time="13:30",
-                            days=[Days.MONDAY, Days.WEDNESDAY],
-                            venue="Room 101",
-                        ),
-                    ],
-                ),
-                CourseBatch(
-                    event_color=3,
-                    component_type=ComponentType.P,
-                    batch_number=1,
-                    timings=[
-                        Timing(
-                            start_time="14:00",
-                            end_time="16:00",
-                            days=[Days.FRIDAY],
-                            venue="Lab A",
-                        )
-                    ],
-                ),
-            ],
-        ),
-        Course(
-            course_id="MATH201",
-            course_name="Linear Algebra",
-            batches=[
-                CourseBatch(
-                    event_color=8,
-                    component_type=ComponentType.L,
-                    batch_number=1,
-                    timings=[
-                        Timing(
-                            start_time="11:00",
-                            end_time="12:30",
-                            days=[Days.TUESDAY, Days.THURSDAY],
-                            venue="Room 205",
-                        )
-                    ],
-                )
-            ],
-        ),
-    ]
-
-    write_courses_to_json(sample_courses, "data/sample/sample-courses.json")
-    courses = read_courses_from_json("data/sample/sample-courses.json")
-    print(courses)
-
-
-if __name__ == "__main__":
-    test()
