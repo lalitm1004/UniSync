@@ -52,6 +52,14 @@ class CalendarEvent(BaseModel):
     recurrence: List[str]
 
     @staticmethod
+    def from_course_list(course_list: List[Course]) -> List[CalendarEvent]:
+        return [
+            event
+            for course in course_list
+            for event in CalendarEvent.from_course(course)
+        ]
+
+    @staticmethod
     def from_course(course: Course) -> List[CalendarEvent]:
         events: List[CalendarEvent] = []
 

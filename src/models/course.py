@@ -11,6 +11,7 @@ from typing import Final, List, Optional, Tuple, Union
 REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
 
 TIME_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
+VENUE_RE = re.compile(r"[A-Za-z]\d{3}[A-Za-z]?")
 
 
 class Course(BaseModel):
@@ -95,6 +96,19 @@ class Timing(BaseModel):
         minute = int(minute_str)
 
         return time(hour, minute)
+
+    @field_validator("venue", mode="before")
+    def _convert_venue(cls, value: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Invalid type for venue: {type(value)}. Expected a string"
+            )
+
+        match_ = VENUE_RE.search(value)
+        if match_:
+            return match_.group(0)
+
+        return value
 
     def pretty_str(self, indent: int = 0) -> str:
         prefix = "    " * indent
