@@ -5,30 +5,10 @@ from pydantic import BaseModel
 from typing import Dict, List
 from zoneinfo import ZoneInfo
 
-from models.course import Course, CourseBatch, Days, Timing
+from models.course import Course, CourseBatch, Day, Timing
 from config import AppConfig
 
 APP_CONFIG = AppConfig.from_toml()
-
-DAYS_TO_RRULE: Dict[Days, str] = {
-    Days.MONDAY: "MO",
-    Days.TUESDAY: "TU",
-    Days.WEDNESDAY: "WE",
-    Days.THURSDAY: "TH",
-    Days.FRIDAY: "FR",
-    Days.SATURDAY: "SA",
-    Days.SUNDAY: "SU",
-}
-
-WEEKDAY_TO_DAYS: Dict[int, Days] = {
-    0: Days.MONDAY,
-    1: Days.TUESDAY,
-    2: Days.WEDNESDAY,
-    3: Days.THURSDAY,
-    4: Days.FRIDAY,
-    5: Days.SATURDAY,
-    6: Days.SUNDAY,
-}
 
 
 class CalendarTime(BaseModel):
@@ -107,14 +87,14 @@ def _create_event_from_timing(
     )
 
 
-def _find_first_occurrence(start_date: date, days: List[Days]) -> date:
+def _find_first_occurrence(start_date: date, days: List[Day]) -> date:
     if not days:
         return start_date
 
     current = start_date
     for _ in range(7):
         weekday = current.weekday()
-        if WEEKDAY_TO_DAYS[weekday] in days:
+        if Day.from_weekday(weekday) in days:
             return current
         current += timedelta(days=1)
 
@@ -125,7 +105,8 @@ def _build_recurrence(batch: CourseBatch, timing: Timing) -> List[str]:
     recurrence: List[str] = []
 
     if timing.days:
-        byday = ",".join(DAYS_TO_RRULE[day] for day in timing.days)
+        byday = ",".join(day.rrule for day in timing.days)
+
         # UNTIL must be in UTC format (YYYYMMDDTHHMMSSZ)
         until_utc = datetime.combine(
             batch.end_date,
@@ -154,7 +135,7 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
 
         # check if excluded date's weekday matches any timing day
         weekday = excluded_date.weekday()
-        if WEEKDAY_TO_DAYS[weekday] not in timing.days:
+        if Day.from_weekday(weekday) not in timing.days:
             continue
 
         # format as YYYYMMDDTHHMMSS (local time with TZID)
@@ -187,13 +168,13 @@ def test() -> None:
                     Timing(
                         start_time=cast(time, "08:00"),
                         end_time=cast(time, "08:55"),
-                        days=[Days.MONDAY, Days.WEDNESDAY],
+                        days=[Day.MONDAY, Day.WEDNESDAY],
                         venue="D217",
                     ),
                     Timing(
                         start_time=cast(time, "12:00"),
                         end_time=cast(time, "13:55"),
-                        days=[Days.FRIDAY],
+                        days=[Day.FRIDAY],
                         venue="D217",
                     ),
                 ],
@@ -207,7 +188,7 @@ def test() -> None:
                     Timing(
                         start_time=cast(time, "12:10"),
                         end_time=cast(time, "14:05"),
-                        days=[Days.TUESDAY],
+                        days=[Day.TUESDAY],
                         venue="C317",
                     ),
                 ],

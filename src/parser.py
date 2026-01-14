@@ -4,7 +4,7 @@ from datetime import date, time
 from typing import cast, Dict, Final, List, Optional, Tuple, Union
 
 from config import AppConfig
-from models.course import Course, CourseBatch, Timing, ComponentType, Days
+from models.course import Course, CourseBatch, Timing, ComponentType, Day
 
 HEADER_RE = re.compile(r"([A-Z]{3}\d{3,4})\s*-\s*(.+)")
 COMPONENT_RE = re.compile(r"\b([LTP])(\d+)\b")
@@ -16,14 +16,14 @@ TIME_RE = re.compile(
 DAY_TOKEN_RE = re.compile(r"Mo|Tu|We|Th|Fr|Sa|Su")
 DATES_RE = re.compile(r"(\d{2})/(\d{2})/(\d{4})\s*-\s*(\d{2})/(\d{2})/(\d{4})")
 
-DAY_MAP: Final[Dict[str, Days]] = {
-    "Mo": Days.MONDAY,
-    "Tu": Days.TUESDAY,
-    "We": Days.WEDNESDAY,
-    "Th": Days.THURSDAY,
-    "Fr": Days.FRIDAY,
-    "Sa": Days.SATURDAY,
-    "Su": Days.SUNDAY,
+DAY_MAP: Final[Dict[str, Day]] = {
+    "Mo": Day.MONDAY,
+    "Tu": Day.TUESDAY,
+    "We": Day.WEDNESDAY,
+    "Th": Day.THURSDAY,
+    "Fr": Day.FRIDAY,
+    "Sa": Day.SATURDAY,
+    "Su": Day.SUNDAY,
 }
 
 APP_CONFIG = AppConfig.from_toml()

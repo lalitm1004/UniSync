@@ -78,7 +78,7 @@ class CourseBatch(BaseModel):
 class Timing(BaseModel):
     start_time: time
     end_time: time
-    days: List[Days] = Field(default_factory=list)
+    days: List[Day] = Field(default_factory=list)
     venue: str
 
     @field_validator("start_time", "end_time", mode="before")
@@ -130,7 +130,7 @@ class ComponentType(StrEnum):
     P = "P"
 
 
-class Days(StrEnum):
+class Day(StrEnum):
     MONDAY = "MONDAY"
     TUESDAY = "TUESDAY"
     WEDNESDAY = "WEDNESDAY"
@@ -138,6 +138,44 @@ class Days(StrEnum):
     FRIDAY = "FRIDAY"
     SATURDAY = "SATURDAY"
     SUNDAY = "SUNDAY"
+
+    @property
+    def rrule(self) -> str:
+        match self:
+            case Day.MONDAY:
+                return "MO"
+            case Day.TUESDAY:
+                return "TU"
+            case Day.WEDNESDAY:
+                return "WE"
+            case Day.THURSDAY:
+                return "TH"
+            case Day.FRIDAY:
+                return "FR"
+            case Day.SATURDAY:
+                return "SA"
+            case Day.SUNDAY:
+                return "SU"
+
+    @classmethod
+    def from_weekday(cls, weekday: int) -> Day:
+        match weekday:
+            case 0:
+                return cls.MONDAY
+            case 1:
+                return cls.TUESDAY
+            case 2:
+                return cls.WEDNESDAY
+            case 3:
+                return cls.THURSDAY
+            case 4:
+                return cls.FRIDAY
+            case 5:
+                return cls.SATURDAY
+            case 6:
+                return cls.SUNDAY
+            case _:
+                raise ValueError(f"Invalid weekday: {weekday}")
 
 
 def _convert_title_to_shorthand(title: str) -> str:
