@@ -50,7 +50,12 @@ class CalendarEvent(BaseModel):
             else:
                 component_str = batch.component
 
-            summary = f"{course.course_shorthand} - {component_str}"
+            # Use course_shorthand if available, otherwise generate it
+            shorthand = course.course_shorthand
+            if shorthand is None:
+                shorthand = f"{course.course_code.upper()} {course.course_title}"
+
+            summary = f"{shorthand} - {component_str}"
 
             for timing in batch.timings:
                 event = _create_event_from_timing(
@@ -147,7 +152,7 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
     if not excluded_datetimes:
         return ""
 
-    return f"EXDATE:TZID={APP_CONFIG.TIMEZONE}:{','.join(excluded_datetimes)}"
+    return f"EXDATE;TZID={APP_CONFIG.TIMEZONE}:{','.join(excluded_datetimes)}"
 
 
 def test() -> None:
