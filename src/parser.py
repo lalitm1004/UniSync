@@ -238,6 +238,7 @@ def test() -> None:
         if course is None:
             print("No course parsed")
         else:
+            course.generate_course_shorthand()
             print(course.pretty_str())
         print()
 
