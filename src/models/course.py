@@ -5,7 +5,7 @@ import re
 from datetime import date, time
 from enum import StrEnum
 from pathlib import Path
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Final, List, Optional, Tuple, Union
 
 REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
@@ -21,8 +21,10 @@ class Course(BaseModel):
     batches: List[CourseBatch] = Field(default_factory=list)
     course_shorthand: Optional[str] = Field(default=None)
 
+    @model_validator(mode="after")
     def generate_course_shorthand(self) -> Course:
-        self.course_shorthand = f"{self.course_code.upper()} {_convert_title_to_shorthand(self.course_title)}"
+        if self.course_shorthand is None:
+            self.course_shorthand = f"{self.course_code.upper()} {_convert_title_to_shorthand(self.course_title)}"
         return self
 
     def pretty_str(self, indent: int = 0) -> str:

@@ -18,6 +18,7 @@ class CalendarTime(BaseModel):
 
 class CalendarEvent(BaseModel):
     summary: str
+    description: str
     location: str
     start: CalendarTime
     end: CalendarTime
@@ -50,7 +51,7 @@ class CalendarEvent(BaseModel):
             else:
                 component_str = batch.component
 
-            # Use course_shorthand if available, otherwise generate it
+            # use course_shorthand if available, otherwise generate it
             shorthand = course.course_shorthand
             if shorthand is None:
                 shorthand = f"{course.course_code.upper()} {course.course_title}"
@@ -60,6 +61,7 @@ class CalendarEvent(BaseModel):
             for timing in batch.timings:
                 event = _create_event_from_timing(
                     summary=summary,
+                    description=course.course_title,
                     batch=batch,
                     timing=timing,
                 )
@@ -70,6 +72,7 @@ class CalendarEvent(BaseModel):
 
 def _create_event_from_timing(
     summary: str,
+    description: str,
     batch: CourseBatch,
     timing: Timing,
 ) -> CalendarEvent:
@@ -84,6 +87,7 @@ def _create_event_from_timing(
 
     return CalendarEvent(
         summary=summary,
+        description=description,
         location=timing.venue,
         start=CalendarTime(dateTime=start_dt.isoformat()),
         end=CalendarTime(dateTime=end_dt.isoformat()),
@@ -156,52 +160,9 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
 
 
 def test() -> None:
-    from typing import cast
-    from models.course import ComponentType
+    from utils import get_sample_course_list
 
-    sample_course = Course(
-        course_code="CSD366",
-        course_title="Reinforcement Learning",
-        is_enrolled=True,
-        batches=[
-            CourseBatch(
-                event_color=5,
-                component=(ComponentType.L, 1),
-                start_date=date(2026, 1, 12),
-                end_date=date(2026, 4, 28),
-                timings=[
-                    Timing(
-                        start_time=cast(time, "08:00"),
-                        end_time=cast(time, "08:55"),
-                        days=[Day.MONDAY, Day.WEDNESDAY],
-                        venue="D217",
-                    ),
-                    Timing(
-                        start_time=cast(time, "12:00"),
-                        end_time=cast(time, "13:55"),
-                        days=[Day.FRIDAY],
-                        venue="D217",
-                    ),
-                ],
-            ),
-            CourseBatch(
-                event_color=3,
-                component=(ComponentType.P, 2),
-                start_date=date(2026, 1, 12),
-                end_date=date(2026, 4, 28),
-                timings=[
-                    Timing(
-                        start_time=cast(time, "12:10"),
-                        end_time=cast(time, "14:05"),
-                        days=[Day.TUESDAY],
-                        venue="C317",
-                    ),
-                ],
-            ),
-        ],
-    )
-
-    sample_course.generate_course_shorthand()
+    sample_course = get_sample_course_list()[0]
     print(sample_course.pretty_str())
 
     events = CalendarEvent.from_course(sample_course)
