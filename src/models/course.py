@@ -17,9 +17,9 @@ VENUE_RE = re.compile(r"[A-Za-z]\d{3}[A-Za-z]?")
 class Course(BaseModel):
     course_code: str
     course_title: str
+    course_shorthand: Optional[str] = Field(default=None)
     is_enrolled: bool = Field(default=True)
     batches: List[CourseBatch] = Field(default_factory=list)
-    course_shorthand: Optional[str] = Field(default=None)
 
     @model_validator(mode="after")
     def generate_course_shorthand(self) -> Course:
@@ -51,8 +51,29 @@ class CourseBatch(BaseModel):
     event_color: int = Field(ge=1, le=11, default=1)
     component: Union[Tuple[ComponentType, int], str]
     timings: List[Timing] = Field(default_factory=list)
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
+
+    @field_validator("start_date", "end_date", mode="before")
+    def _convert_date(cls, value) -> str:
+        if isinstance(value, date):
+            return value.isoformat()
+
+        if isinstance(value, str):
+            date.fromisoformat(value)
+            return value
+
+        raise ValueError(
+            f"Invalid type for date: {type(value)}. Expected date or string"
+        )
+
+    @property
+    def start_date_obj(self) -> date:
+        return date.fromisoformat(self.start_date)
+
+    @property
+    def end_date_obj(self) -> date:
+        return date.fromisoformat(self.end_date)
 
     def pretty_str(self, indent: int = 0) -> str:
         lines = []
@@ -78,25 +99,35 @@ class CourseBatch(BaseModel):
 
 
 class Timing(BaseModel):
-    start_time: time
-    end_time: time
+    start_time: str
+    end_time: str
     days: List[Day] = Field(default_factory=list)
     venue: str
 
     @field_validator("start_time", "end_time", mode="before")
-    def _convert_time(cls, value: str) -> time:
-        if not isinstance(value, str):
-            raise ValueError(f"Invalid type for time: {type(value)}. Expected a string")
+    def _convert_time(cls, value) -> str:
+        if isinstance(value, time):
+            return value.strftime("%H:%M")
 
-        if not TIME_RE.match(value):
-            raise ValueError(
-                f"invalid time format, expected HH:MM 24-hour, got: {value}"
-            )
+        if isinstance(value, str):
+            if not TIME_RE.match(value):
+                raise ValueError(
+                    f"invalid time format, expected HH:MM 24-hour, got: {value}"
+                )
+            return value
 
-        hour_str, minute_str = value.split(":")
-        hour = int(hour_str)
-        minute = int(minute_str)
+        raise ValueError(
+            f"Invalid type for time: {type(value)}. Expected time or string"
+        )
 
+    @property
+    def start_time_obj(self) -> time:
+        hour, minute = map(int, self.start_time.split(":"))
+        return time(hour, minute)
+
+    @property
+    def end_time_obj(self) -> time:
+        hour, minute = map(int, self.end_time.split(":"))
         return time(hour, minute)
 
     @field_validator("venue", mode="before")
@@ -114,9 +145,7 @@ class Timing(BaseModel):
 
     def pretty_str(self, indent: int = 0) -> str:
         prefix = "    " * indent
-        time_str = (
-            f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
-        )
+        time_str = f"{self.start_time} - {self.end_time}"
         days_str = (
             ", ".join(day.value.capitalize() for day in self.days)
             if self.days
@@ -195,12 +224,7 @@ def _convert_title_to_shorthand(title: str) -> str:
     return shorthand.upper()
 
 
-def write_courses_to_json(
-    courses: List[Course], path: Union[str, Path] = REVIEW_FILE_PATH
-) -> None:
-    if isinstance(path, str):
-        path = Path(path)
-
+def write_courses_to_json(courses: List[Course], path: Path = REVIEW_FILE_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     courses_date = [c.model_dump() for c in courses]
@@ -209,10 +233,7 @@ def write_courses_to_json(
         json.dump(courses_date, f, indent=4, ensure_ascii=False)
 
 
-def read_courses_from_json(path: Union[str, Path] = REVIEW_FILE_PATH) -> List[Course]:
-    if isinstance(path, str):
-        path = Path(path)
-
+def read_courses_from_json(path: Path = REVIEW_FILE_PATH) -> List[Course]:
     if not path.exists():
         raise FileNotFoundError(f"Course file not found: {path}")
 

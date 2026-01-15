@@ -8,7 +8,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 
-from config import ERPCredentials
+from config import AppConfig, ERPCredentials
+
+APP_CONFIG = AppConfig.from_toml()
 
 
 class SNUERPScraper:
@@ -17,7 +19,11 @@ class SNUERPScraper:
         "https://prodweb.snu.in/psc/CSPROD/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSR_SSENRL_LIST.GBL"
     )
 
-    def __init__(self, *, headless: bool = True, timeout_sec: int = 15) -> None:
+    def __init__(
+        self,
+        headless: bool = APP_CONFIG.RUN_HEADLESS_BROWSER_INSTANCE,
+        timeout_sec: int = 15,
+    ) -> None:
         self.timeout_sec = timeout_sec
         self.driver = self._create_driver(headless)
         self.wait = WebDriverWait(self.driver, timeout=timeout_sec)

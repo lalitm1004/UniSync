@@ -18,7 +18,7 @@ APP_CONFIG = AppConfig.from_toml()
 
 class CalendarSynchronizer:
     SCOPES: Final[List[str]] = ["https://www.googleapis.com/auth/calendar"]
-    CALENDAR_SUMMARY: Final[str] = "UniSync v3 TEST"
+    CALENDAR_SUMMARY: Final[str] = "UniSync v3"
 
     CACHE_DATA_PATH: Final[Path] = Path("data/cache")
     TOKEN_PATH: Final[Path] = CACHE_DATA_PATH / "client_token.json"
@@ -96,7 +96,7 @@ class CalendarSynchronizer:
 
         calendar_id = self._get_calendar_id()
 
-        for event in tqdm(event_list):
+        for event in tqdm(event_list, desc="Creating calendar events"):
             try:
                 self._service.events().insert(
                     calendarId=calendar_id, body=event.model_dump(mode="json")

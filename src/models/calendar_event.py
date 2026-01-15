@@ -78,10 +78,10 @@ def _create_event_from_timing(
 ) -> CalendarEvent:
     tz = ZoneInfo(APP_CONFIG.TIMEZONE)
 
-    first_occurrence = _find_first_occurrence(batch.start_date, timing.days)
+    first_occurrence = _find_first_occurrence(batch.start_date_obj, timing.days)
 
-    start_dt = datetime.combine(first_occurrence, timing.start_time, tzinfo=tz)
-    end_dt = datetime.combine(first_occurrence, timing.end_time, tzinfo=tz)
+    start_dt = datetime.combine(first_occurrence, timing.start_time_obj, tzinfo=tz)
+    end_dt = datetime.combine(first_occurrence, timing.end_time_obj, tzinfo=tz)
 
     recurrence = _build_recurrence(batch, timing)
 
@@ -116,9 +116,8 @@ def _build_recurrence(batch: CourseBatch, timing: Timing) -> List[str]:
     if timing.days:
         byday = ",".join(day.rrule for day in timing.days)
 
-        # UNTIL must be in UTC format (YYYYMMDDTHHMMSSZ)
         until_utc = datetime.combine(
-            batch.end_date,
+            batch.end_date_obj,
             time(23, 59, 59),
             tzinfo=ZoneInfo(APP_CONFIG.TIMEZONE),
         ).astimezone(ZoneInfo("UTC"))
@@ -139,7 +138,7 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
 
     for excluded_date in APP_CONFIG.EXCLUDED_DATES:
         # check if excluded date is within the batch date range
-        if not (batch.start_date <= excluded_date <= batch.end_date):
+        if not (batch.start_date_obj <= excluded_date <= batch.end_date_obj):
             continue
 
         # check if excluded date's weekday matches any timing day
@@ -148,7 +147,7 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
             continue
 
         # format as YYYYMMDDTHHMMSS (local time with TZID)
-        excluded_dt_str = datetime.combine(excluded_date, timing.start_time).strftime(
+        excluded_dt_str = datetime.combine(excluded_date, timing.start_time_obj).strftime(
             "%Y%m%dT%H%M%S"
         )
         excluded_datetimes.append(excluded_dt_str)

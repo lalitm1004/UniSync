@@ -12,4 +12,4 @@ excluded_dates = [
 
 timezone = "Asia/Kolkata"
 
-run_headless_browser_instance = true
+run_headless_browser_instance = false

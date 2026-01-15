@@ -1,5 +1,92 @@
+import argparse
+from typing import List
+
+from parser import HTMLToCourseParser
+from scraper import SNUERPScraper
+from synchronizer import CalendarSynchronizer
+from models.course import (
+    Course,
+    write_courses_to_json,
+    read_courses_from_json,
+    REVIEW_FILE_PATH,
+)
+from utils import log_action, log_error, log_info, log_success, log_warning
+
+
+def scrape_and_parse_courses() -> List[Course]:
+    log_info("Scraping ERP...")
+    scraper = SNUERPScraper()
+    schedule_html = scraper.get_weekly_schedule_html()
+
+    log_info("Parsing scraped data...")
+    courses = [HTMLToCourseParser.parse_raw_html(raw) for raw in schedule_html]
+    courses = [c for c in courses if c]
+
+    return courses
+
+
+def sync_to_calendar(courses: List[Course]) -> None:
+    enrolled_courses = [c for c in courses if c.is_enrolled]
+    log_info(
+        f"Found {len(enrolled_courses)} enrolled course(s) out of {len(courses)} total"
+    )
+
+    if not enrolled_courses:
+        log_warning("No enrolled courses available for synchronization")
+        return
+
+    synchronizer = CalendarSynchronizer()
+    synchronizer.synchronize(enrolled_courses)
+    log_success("Course data successfully synced to Google Calendar")
+
+
+def process_review_file() -> None:
+    log_info("Review file found. Reading courses...")
+    courses = read_courses_from_json(REVIEW_FILE_PATH)
+    sync_to_calendar(courses)
+
+
+def create_review_file() -> None:
+    courses = scrape_and_parse_courses()
+
+    log_info(f"Scraped {len(courses)} course(s) total")
+
+    if not courses:
+        log_warning("No courses found. Operation aborted.")
+        return
+
+    write_courses_to_json(courses, REVIEW_FILE_PATH)
+    log_success(f"Course data exported to: {REVIEW_FILE_PATH}")
+    log_action("Please review the exported file and re-run the script to complete sync")
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Synchronize SNU ERP courses to Google Calendar"
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Delete the review file and force a fresh scrape from ERP",
+    )
+    return parser.parse_args()
+
+
 def main():
-    print("Hello from unisync!")
+    args = parse_arguments()
+
+    try:
+        if args.reset and REVIEW_FILE_PATH.exists():
+            REVIEW_FILE_PATH.unlink()
+            log_info("Reset: Review file deleted")
+
+        if REVIEW_FILE_PATH.exists():
+            process_review_file()
+        else:
+            create_review_file()
+    except Exception as e:
+        log_error(f"An error occurred: {str(e)}")
+        raise
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import re
 from bs4 import BeautifulSoup, Tag
-from datetime import date, time
-from typing import cast, Dict, Final, List, Optional, Tuple, Union
+from datetime import date
+from typing import Dict, Final, List, Optional, Tuple, Union
 
 from config import AppConfig
 from models.course import Course, CourseBatch, Timing, ComponentType, Day
@@ -99,10 +99,10 @@ class HTMLToCourseParser:
 
         dates = HTMLToCourseParser._parse_dates(batch_tr)
         if not dates:
-            start_date = APP_CONFIG.DEFAULT_START_DATE
-            end_date = APP_CONFIG.DEFAULT_END_DATE
+            start_date = APP_CONFIG.DEFAULT_START_DATE.isoformat()
+            end_date = APP_CONFIG.DEFAULT_END_DATE.isoformat()
         else:
-            start_date, end_date = dates
+            start_date, end_date = dates[0].isoformat(), dates[1].isoformat()
 
         return CourseBatch(
             component=component,
@@ -157,13 +157,11 @@ class HTMLToCourseParser:
             day_tokens = DAY_TOKEN_RE.findall(days_block)
             days = [DAY_MAP[token] for token in day_tokens]
 
-            # cast to silence type checker
-            # field_validator transforms it into a valid time object
             try:
                 timings.append(
                     Timing(
-                        start_time=cast(time, start_time),
-                        end_time=cast(time, end_time),
+                        start_time=start_time,
+                        end_time=end_time,
                         days=days,
                         venue=venue,
                     )
@@ -197,8 +195,6 @@ class HTMLToCourseParser:
             return start_date, end_date
         except Exception:
             return None
-
-        return None
 
 
 def to_24h(t: str) -> str:
@@ -238,7 +234,6 @@ def test() -> None:
         if course is None:
             print("No course parsed")
         else:
-            course.generate_course_shorthand()
             print(course.pretty_str())
         print()
 
