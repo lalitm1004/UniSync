@@ -9,11 +9,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from config import AppConfig, GoogleOAuthConfig
+from config import APP_CONFIG, GOOGLE_OAUTH_CONFIG
 from models.course import Course
-from models.calendar_event import CalendarEvent
-
-APP_CONFIG = AppConfig.from_toml()
+from models.google_calendar_event import GoogleCalendarEvent
 
 
 class CalendarSynchronizer:
@@ -51,15 +49,14 @@ class CalendarSynchronizer:
                 if token_path.exists():
                     token_path.unlink()
 
-                oauth_config = GoogleOAuthConfig.from_env()
                 flow = InstalledAppFlow.from_client_config(
-                    oauth_config.to_client_config(),
+                    GOOGLE_OAUTH_CONFIG.to_client_config(),
                     scopes,
                     redirect_uri="http://localhost",
                 )
 
                 flow.oauth2session.fetch_token_kwargs = {
-                    "client_secret": oauth_config.client_secret,
+                    "client_secret": GOOGLE_OAUTH_CONFIG.client_secret,
                 }
 
                 credentials = flow.run_local_server(
@@ -78,7 +75,7 @@ class CalendarSynchronizer:
     def _get_calendar_id(
         self, calendar_details_path: Path = CALENDAR_DETAILS_PATH
     ) -> str:
-        calendar = {"summary": self.CALENDAR_SUMMARY, "timeZone": APP_CONFIG.TIMEZONE}
+        calendar = {"summary": self.CALENDAR_SUMMARY, "timeZone": APP_CONFIG.timezone}
 
         try:
             created_calendar = self._service.calendars().insert(body=calendar).execute()
@@ -92,7 +89,7 @@ class CalendarSynchronizer:
             raise RuntimeError(f"Failed to create calendar: {str(e)}")
 
     def synchronize(self, course_list: List[Course]) -> None:
-        event_list = CalendarEvent.from_course_list(course_list)
+        event_list = GoogleCalendarEvent.from_course_list(course_list)
 
         calendar_id = self._get_calendar_id()
 
@@ -106,14 +103,10 @@ class CalendarSynchronizer:
                 print(f"Event: {event}")
 
 
-def test() -> None:
-    from utils import get_sample_course_list
-
-    sample_courses = get_sample_course_list()
-
-    cs = CalendarSynchronizer()
-    cs.synchronize(sample_courses)
+# def test() -> None:
+#     cs = CalendarSynchronizer()
+#     cs.synchronize(sample_courses)
 
 
-if __name__ == "__main__":
-    test()
+# if __name__ == "__main__":
+#     test()

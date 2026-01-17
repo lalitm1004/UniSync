@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 
-from config import AppConfig, ERPCredentials
+from config.app_config import AppConfig, ERPCredentials
 
 APP_CONFIG = AppConfig.from_toml()
 

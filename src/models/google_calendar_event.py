@@ -5,23 +5,21 @@ from pydantic import BaseModel
 from typing import Dict, List
 from zoneinfo import ZoneInfo
 
+from config import APP_CONFIG
 from models.course import Course, CourseBatch, Day, Timing
-from config import AppConfig
-
-APP_CONFIG = AppConfig.from_toml()
 
 
-class CalendarTime(BaseModel):
+class GoogleCalendarTime(BaseModel):
     dateTime: str
-    timeZone: str = APP_CONFIG.TIMEZONE
+    timeZone: str = APP_CONFIG.timezone
 
 
-class CalendarEvent(BaseModel):
+class GoogleCalendarEvent(BaseModel):
     summary: str
     description: str
     location: str
-    start: CalendarTime
-    end: CalendarTime
+    start: GoogleCalendarTime
+    end: GoogleCalendarTime
     colorId: str
     reminders: Dict = {
         "useDefault": False,
@@ -33,16 +31,16 @@ class CalendarEvent(BaseModel):
     recurrence: List[str]
 
     @staticmethod
-    def from_course_list(course_list: List[Course]) -> List[CalendarEvent]:
+    def from_course_list(course_list: List[Course]) -> List[GoogleCalendarEvent]:
         return [
             event
             for course in course_list
-            for event in CalendarEvent.from_course(course)
+            for event in GoogleCalendarEvent.from_course(course)
         ]
 
     @staticmethod
-    def from_course(course: Course) -> List[CalendarEvent]:
-        events: List[CalendarEvent] = []
+    def from_course(course: Course) -> List[GoogleCalendarEvent]:
+        events: List[GoogleCalendarEvent] = []
 
         for batch in course.batches:
             if isinstance(batch.component, tuple):
@@ -52,7 +50,7 @@ class CalendarEvent(BaseModel):
                 component_str = batch.component
 
             # use course_shorthand if available, otherwise generate it
-            shorthand = course.course_shorthand
+            shorthand = course.shorthand
             if shorthand is None:
                 shorthand = f"{course.course_code.upper()} {course.course_title}"
 
@@ -75,7 +73,7 @@ def _create_event_from_timing(
     description: str,
     batch: CourseBatch,
     timing: Timing,
-) -> CalendarEvent:
+) -> GoogleCalendarEvent:
     tz = ZoneInfo(APP_CONFIG.TIMEZONE)
 
     first_occurrence = _find_first_occurrence(batch.start_date_obj, timing.days)
@@ -85,12 +83,12 @@ def _create_event_from_timing(
 
     recurrence = _build_recurrence(batch, timing)
 
-    return CalendarEvent(
+    return GoogleCalendarEvent(
         summary=summary,
         description=description,
         location=timing.venue,
-        start=CalendarTime(dateTime=start_dt.isoformat()),
-        end=CalendarTime(dateTime=end_dt.isoformat()),
+        start=GoogleCalendarTime(dateTime=start_dt.isoformat()),
+        end=GoogleCalendarTime(dateTime=end_dt.isoformat()),
         colorId=str(batch.event_color),
         recurrence=recurrence,
     )
@@ -147,9 +145,9 @@ def _build_exdates(batch: CourseBatch, timing: Timing) -> str:
             continue
 
         # format as YYYYMMDDTHHMMSS (local time with TZID)
-        excluded_dt_str = datetime.combine(excluded_date, timing.start_time_obj).strftime(
-            "%Y%m%dT%H%M%S"
-        )
+        excluded_dt_str = datetime.combine(
+            excluded_date, timing.start_time_obj
+        ).strftime("%Y%m%dT%H%M%S")
         excluded_datetimes.append(excluded_dt_str)
 
     if not excluded_datetimes:
@@ -164,7 +162,7 @@ def test() -> None:
     sample_course = get_sample_course_list()[0]
     print(sample_course.pretty_str())
 
-    events = CalendarEvent.from_course(sample_course)
+    events = GoogleCalendarEvent.from_course(sample_course)
 
     print(f"\nGenerated {len(events)} CalendarEvent(s):\n")
 

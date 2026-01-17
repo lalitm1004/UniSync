@@ -1,6 +1,10 @@
-[config]
-default_start_date = "2026-01-12"
-default_end_date = "2026-04-28"
+[calendar.defaults]
+start_date = "2026-01-12"
+end_date = "2026-04-28"
+event_color = 1
+
+
+[calendar.exclusions]
 excluded_dates = [
     "2026-01-26",              # Republic Day
     "2026-02-20 - 2026-02-21", # Breeze
@@ -10,6 +14,8 @@ excluded_dates = [
     "2026-04-14",              # Ambedkar Jayanti
 ]
 
+[locale]
 timezone = "Asia/Kolkata"
 
-run_headless_browser_instance = false
+[execution]
+run_headless_browser = false

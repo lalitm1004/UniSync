@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup, Tag
 from datetime import date
 from typing import Dict, Final, List, Optional, Tuple, Union
 
-from config import AppConfig
+from config.app_config import AppConfig
 from models.course import Course, CourseBatch, Timing, ComponentType, Day
 
 HEADER_RE = re.compile(r"([A-Z]{3}\d{3,4})\s*-\s*(.+)")

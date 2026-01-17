@@ -1,164 +1,106 @@
 from __future__ import annotations
 
-import json
 import re
-from datetime import date, time
+from datetime import datetime, date, time
 from enum import StrEnum
-from pathlib import Path
 from pydantic import BaseModel, Field, field_validator, model_validator
+from re import Pattern
 from typing import Final, List, Optional, Tuple, Union
 
-REVIEW_FILE_PATH: Final[Path] = Path("data/review/review-courses.json")
+from config import APP_CONFIG
 
-TIME_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
-VENUE_RE = re.compile(r"[A-Za-z]\d{3}[A-Za-z]?")
+VENUE_RE: Final[Pattern] = re.compile(r"[A-Za-z]\d{3}[A-Za-z]?")
 
 
 class Course(BaseModel):
     course_code: str
     course_title: str
-    course_shorthand: Optional[str] = Field(default=None)
-    is_enrolled: bool = Field(default=True)
-    batches: List[CourseBatch] = Field(default_factory=list)
+    shorthand: Optional[str]
+    is_enrolled: bool
+    batches: List[CourseBatch]
 
     @model_validator(mode="after")
-    def generate_course_shorthand(self) -> Course:
+    def _generate_course_shorthand(self) -> Course:
         if self.course_shorthand is None:
-            self.course_shorthand = f"{self.course_code.upper()} {_convert_title_to_shorthand(self.course_title)}"
+            # remove punctuation
+            title = re.sub(r"[^\w\s]", "", self.course_title)
+
+            # recursively reduce double spaces to single space
+            while "  " in title:
+                title = title.replace("  ", " ")
+
+            # split by whitespace, take first letter of each token, capitalize
+            tokens = title.split()
+            shorthand = "".join(token[0] for token in tokens if token)
+
+            self.course_shorthand = f"{self.course_code.upper()} {shorthand}"
         return self
-
-    def pretty_str(self, indent: int = 0) -> str:
-        lines = []
-        prefix = "    " * indent
-
-        lines.append(f"{prefix}Course: {self.course_code}")
-        lines.append(f"{prefix}Shorthand: {self.course_shorthand}")
-        lines.append(f"{prefix}  Title: {self.course_title}")
-        lines.append(f"{prefix}  Enrolled: {self.is_enrolled}")
-
-        if self.batches:
-            lines.append(f"{prefix}  Batches:")
-            for i, batch in enumerate(self.batches, 1):
-                lines.append(f"{prefix}    Batch {i}:")
-                lines.append(batch.pretty_str(indent + 3))
-        else:
-            lines.append(f"{prefix}  Batches: None")
-
-        return "\n".join(lines)
 
 
 class CourseBatch(BaseModel):
-    event_color: int = Field(ge=1, le=11, default=1)
+    event_color: int = Field(ge=1, le=11)
     component: Union[Tuple[ComponentType, int], str]
-    timings: List[Timing] = Field(default_factory=list)
-    start_date: str
-    end_date: str
+    timings: List[Timing]
+    start_date: str = Field(default=APP_CONFIG.default_start_date.isoformat())
+    end_date: str = Field(default=APP_CONFIG.default_end_date.isoformat())
 
     @field_validator("start_date", "end_date", mode="before")
-    def _convert_date(cls, value) -> str:
+    def _convert_date(cls, value: Union[date, str]) -> str:
         if isinstance(value, date):
             return value.isoformat()
 
         if isinstance(value, str):
-            date.fromisoformat(value)
-            return value
+            try:
+                parsed = datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError("Date must be in YYYY-MM-DD ISO format")
 
-        raise ValueError(
-            f"Invalid type for date: {type(value)}. Expected date or string"
+            return parsed.isoformat()
+
+        raise TypeError(
+            f"Invalid type for date field: {type(value)}. Expected a Union[date, str]"
         )
-
-    @property
-    def start_date_obj(self) -> date:
-        return date.fromisoformat(self.start_date)
-
-    @property
-    def end_date_obj(self) -> date:
-        return date.fromisoformat(self.end_date)
-
-    def pretty_str(self, indent: int = 0) -> str:
-        lines = []
-        prefix = "    " * indent
-
-        if isinstance(self.component, tuple):
-            comp_str = f"{self.component[0].value} {self.component[1]}"
-        else:
-            comp_str = self.component
-
-        lines.append(f"{prefix}Component: {comp_str}")
-        lines.append(f"{prefix}Color: {self.event_color}")
-        lines.append(f"{prefix}DateRange: {self.start_date} to {self.end_date}")
-
-        if self.timings:
-            lines.append(f"{prefix}Timings:")
-            for timing in self.timings:
-                lines.append(timing.pretty_str(indent + 1))
-        else:
-            lines.append(f"{prefix}Timings: None")
-
-        return "\n".join(lines)
-
-
-class Timing(BaseModel):
-    start_time: str
-    end_time: str
-    days: List[Day] = Field(default_factory=list)
-    venue: str
-
-    @field_validator("start_time", "end_time", mode="before")
-    def _convert_time(cls, value) -> str:
-        if isinstance(value, time):
-            return value.strftime("%H:%M")
-
-        if isinstance(value, str):
-            if not TIME_RE.match(value):
-                raise ValueError(
-                    f"invalid time format, expected HH:MM 24-hour, got: {value}"
-                )
-            return value
-
-        raise ValueError(
-            f"Invalid type for time: {type(value)}. Expected time or string"
-        )
-
-    @property
-    def start_time_obj(self) -> time:
-        hour, minute = map(int, self.start_time.split(":"))
-        return time(hour, minute)
-
-    @property
-    def end_time_obj(self) -> time:
-        hour, minute = map(int, self.end_time.split(":"))
-        return time(hour, minute)
-
-    @field_validator("venue", mode="before")
-    def _convert_venue(cls, value: str) -> str:
-        if not isinstance(value, str):
-            raise ValueError(
-                f"Invalid type for venue: {type(value)}. Expected a string"
-            )
-
-        match_ = VENUE_RE.search(value)
-        if match_:
-            return match_.group(0)
-
-        return value
-
-    def pretty_str(self, indent: int = 0) -> str:
-        prefix = "    " * indent
-        time_str = f"{self.start_time} - {self.end_time}"
-        days_str = (
-            ", ".join(day.value.capitalize() for day in self.days)
-            if self.days
-            else "No days"
-        )
-
-        return f"{prefix}{time_str} | {days_str} | {self.venue}"
 
 
 class ComponentType(StrEnum):
     L = "L"
     T = "T"
     P = "P"
+
+
+class Timing(BaseModel):
+    start_time: str
+    end_time: str
+    days: List[Day]
+    venue: str = Field(default="TBA")
+
+    @field_validator("start_time", "end_time", mode="before")
+    def _convert_time(cls, value: Union[time, str]) -> str:
+        if isinstance(value, time):
+            return value.strftime("%H:%M")
+
+        if isinstance(value, str):
+            try:
+                parsed = datetime.strptime(value, "%H:%M").time()
+            except ValueError:
+                raise ValueError("Time must be in HH:MM 24-hour format")
+
+            return parsed.strftime("%H:%M")
+
+        raise TypeError(
+            f"Invalid type for time field: {type(value)}. Expected a Union[time, str]"
+        )
+
+    @field_validator("venue", mode="before")
+    def _convert_venue(cls, value: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError(f"Invalid type for venue: {type(value)}. Expected a str")
+
+        match_ = VENUE_RE.search(value)
+        if match_:
+            return match_.group(0)
+
+        return value
 
 
 class Day(StrEnum):
@@ -207,40 +149,3 @@ class Day(StrEnum):
                 return cls.SUNDAY
             case _:
                 raise ValueError(f"Invalid weekday: {weekday}")
-
-
-def _convert_title_to_shorthand(title: str) -> str:
-    # remove punctuation
-    title = re.sub(r"[^\w\s]", "", title)
-
-    # recursively reduce double spaces to single space
-    while "  " in title:
-        title = title.replace("  ", " ")
-
-    # split by whitespace, take first letter of each token, capitalize
-    tokens = title.split()
-    shorthand = "".join(token[0] for token in tokens if token)
-
-    return shorthand.upper()
-
-
-def write_courses_to_json(courses: List[Course], path: Path = REVIEW_FILE_PATH) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    courses_date = [c.model_dump() for c in courses]
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(courses_date, f, indent=4, ensure_ascii=False)
-
-
-def read_courses_from_json(path: Path = REVIEW_FILE_PATH) -> List[Course]:
-    if not path.exists():
-        raise FileNotFoundError(f"Course file not found: {path}")
-
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    if not isinstance(data, list):
-        raise ValueError("Invalid course file format: expected a list")
-
-    return [Course.model_validate(item) for item in data]
