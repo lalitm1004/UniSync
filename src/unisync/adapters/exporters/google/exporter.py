@@ -1,3 +1,5 @@
+"""Google Calendar exporter and OAuth integration."""
+
 import json
 from pathlib import Path
 from typing import Any, Final, cast
@@ -22,10 +24,25 @@ APP_CONFIG: Final[AppConfig] = AppConfig.from_toml()
 
 
 class GoogleCalendarExporter(CourseExporter):
+    """Export courses to Google Calendar.
+
+    Converts courses into events, writes them to a review file, and uploads
+    them to a dedicated calendar after confirmation.
+
+    Attributes:
+        SCOPES: OAuth scopes requested for the calendar API.
+        CALENDAR_SUMMARY: Name of the target calendar.
+    """
+
     SCOPES: Final[list[str]] = ["https://www.googleapis.com/auth/calendar"]
     CALENDAR_SUMMARY: Final[str] = "UniSync v4"
 
     def export_courses(self, course_list: list[Course]) -> None:
+        """Convert courses to events, await review, then upload to Google Calendar.
+
+        Args:
+            course_list: The courses to export.
+        """
         google_calendar_events = GoogleCalendarEvent.from_course_list(course_list)
 
         GoogleCalendarExporter.write_to_json(google_calendar_events)
@@ -36,6 +53,11 @@ class GoogleCalendarExporter(CourseExporter):
 
     @staticmethod
     def write_to_json(events: list[GoogleCalendarEvent]) -> None:
+        """Serialize events to the review file as JSON.
+
+        Args:
+            events: The events to write.
+        """
         REVIEW_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
         events_data = [e.model_dump() for e in events]
@@ -45,6 +67,15 @@ class GoogleCalendarExporter(CourseExporter):
 
     @staticmethod
     def read_from_file() -> list[GoogleCalendarEvent]:
+        """Read and validate events from the review file.
+
+        Returns:
+            The parsed events.
+
+        Raises:
+            FileNotFoundError: If the review file does not exist.
+            ValueError: If the file does not contain a JSON list.
+        """
         if not REVIEW_FILE_PATH.exists():
             raise FileNotFoundError
 
@@ -58,6 +89,11 @@ class GoogleCalendarExporter(CourseExporter):
         return [GoogleCalendarEvent.model_validate(item) for item in data]
 
     def _sync_to_calendar(self, events: list[GoogleCalendarEvent]) -> None:
+        """Upload events to the target Google Calendar.
+
+        Args:
+            events: The events to upload.
+        """
         service = self._initialize_service()
         calendar_id = self._get_calendar_id(service)
 
@@ -67,10 +103,20 @@ class GoogleCalendarExporter(CourseExporter):
             ).execute()
 
     def _initialize_service(self) -> Any:
+        """Build an authenticated Google Calendar service.
+
+        Returns:
+            The calendar service resource.
+        """
         credentials = self._get_credentials()
         return build("calendar", "v3", credentials=credentials)
 
     def _get_credentials(self) -> Credentials:
+        """Load cached credentials or run the OAuth flow to obtain new ones.
+
+        Returns:
+            Valid OAuth credentials.
+        """
         credentials = None
 
         if TOKEN_PATH.exists():
@@ -108,6 +154,17 @@ class GoogleCalendarExporter(CourseExporter):
         return cast(Credentials, credentials)
 
     def _get_calendar_id(self, service: Any) -> str:
+        """Create the target calendar and return its ID.
+
+        Args:
+            service: The calendar service resource.
+
+        Returns:
+            The ID of the created calendar.
+
+        Raises:
+            RuntimeError: If the calendar could not be created.
+        """
         calendar = {"summary": self.CALENDAR_SUMMARY, "timeZone": APP_CONFIG.TIMEZONE}
 
         try:

@@ -7,6 +7,11 @@ from unisync.types import ExporterType, ScraperType
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments.
+
+    Returns:
+        The parsed arguments, including scraper and exporter choices.
+    """
     parser = argparse.ArgumentParser(
         description="Synchronize course schedules with calendar services"
     )

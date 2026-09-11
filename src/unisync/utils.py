@@ -1,3 +1,5 @@
+"""Shared helpers for scheduling and recurrence calculations."""
+
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -5,8 +7,18 @@ from unisync.models import CourseBatch, Day, Timing
 
 
 class DayUtils:
+    """Helpers for converting :class:`Day` values to and from external formats."""
+
     @staticmethod
     def to_rrule(day: Day) -> str:
+        """Convert a :class:`Day` to its RFC 5545 two-letter code.
+
+        Args:
+            day: The day to convert.
+
+        Returns:
+            The corresponding ``BYDAY`` value (e.g. ``"MO"``).
+        """
         match day:
             case Day.MONDAY:
                 return "MO"
@@ -25,6 +37,17 @@ class DayUtils:
 
     @staticmethod
     def from_weekday(weekday: int) -> Day:
+        """Convert a Python weekday index to a :class:`Day`.
+
+        Args:
+            weekday: Zero-based weekday index, where Monday is ``0``.
+
+        Returns:
+            The matching :class:`Day`.
+
+        Raises:
+            ValueError: If ``weekday`` is outside ``0``-``6``.
+        """
         match weekday:
             case 0:
                 return Day.MONDAY
@@ -45,12 +68,19 @@ class DayUtils:
 
 
 class TimeUtils:
+    """Helpers for computing occurrence dates and recurrence rules."""
+
     @staticmethod
     def find_first_occurrence(start_date: date, days: list[Day]) -> date:
-        """
-        Return the first date on or after ``start_date`` matching a day in ``days``.
-        """
+        """Return the first date on or after ``start_date`` matching a day in ``days``.
 
+        Args:
+            start_date: The earliest possible date.
+            days: Days of the week to match.
+
+        Returns:
+            The first matching date, or ``start_date`` if no day matches.
+        """
         if not days:
             return start_date
 
@@ -69,7 +99,17 @@ class TimeUtils:
         timezone: str,
         excluded_dates: list[date],
     ) -> list[str]:
-        """Build RFC 5545 recurrence rules for a weekly class session."""
+        """Build RFC 5545 recurrence rules for a weekly class session.
+
+        Args:
+            batch: The course batch owning the session.
+            timing: The session timing.
+            timezone: IANA timezone for the schedule.
+            excluded_dates: Dates to exclude from the recurrence.
+
+        Returns:
+            A list of RFC 5545 recurrence and exclusion rule strings.
+        """
         recurrence: list[str] = []
 
         if timing.days:
@@ -98,7 +138,17 @@ class TimeUtils:
         timezone: str,
         excluded_dates: list[date],
     ) -> str:
-        """Build an RFC 5545 EXDATE rule for excluded dates within a session's range."""
+        """Build an RFC 5545 ``EXDATE`` rule for excluded dates in the session range.
+
+        Args:
+            batch: The course batch owning the session.
+            timing: The session timing.
+            timezone: IANA timezone for the schedule.
+            excluded_dates: Candidate dates to exclude.
+
+        Returns:
+            The ``EXDATE`` rule string, or an empty string if none apply.
+        """
         excluded_datetimes: list[str] = []
 
         for excluded_date in excluded_dates:

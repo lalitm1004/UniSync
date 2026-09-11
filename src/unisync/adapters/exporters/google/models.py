@@ -1,3 +1,5 @@
+"""Google Calendar event models and course-to-event mapping."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -14,6 +16,19 @@ APP_CONFIG = AppConfig.from_toml()
 
 
 class GoogleCalendarEvent(BaseModel):
+    """A single event as understood by the Google Calendar API.
+
+    Attributes:
+        summary: Event title.
+        description: Longer event description.
+        location: Venue where the session is held.
+        start: Start time of the first occurrence.
+        end: End time of the first occurrence.
+        colorId: Google Calendar color identifier.
+        reminders: Popup reminders to apply to the event.
+        recurrence: RFC 5545 recurrence and exclusion rules.
+    """
+
     summary: str
     description: str
     location: str
@@ -32,6 +47,14 @@ class GoogleCalendarEvent(BaseModel):
 
     @staticmethod
     def from_course_list(course_list: list[Course]) -> list[GoogleCalendarEvent]:
+        """Flatten a list of courses into a list of calendar events.
+
+        Args:
+            course_list: The courses to convert.
+
+        Returns:
+            All events generated from every batch and timing of every course.
+        """
         return [
             event
             for course in course_list
@@ -40,6 +63,14 @@ class GoogleCalendarEvent(BaseModel):
 
     @staticmethod
     def from_course(course: Course) -> list[GoogleCalendarEvent]:
+        """Generate one event per timing of every batch in ``course``.
+
+        Args:
+            course: The course to convert.
+
+        Returns:
+            The events generated from the course.
+        """
         events: list[GoogleCalendarEvent] = []
 
         for batch in course.batches:
@@ -59,6 +90,13 @@ class GoogleCalendarEvent(BaseModel):
 
 
 class GoogleCalendarTime(BaseModel):
+    """A timezone-aware instant as expected by the Google Calendar API.
+
+    Attributes:
+        dateTime: ISO 8601 datetime string.
+        timeZone: IANA timezone of the datetime.
+    """
+
     dateTime: str
     timeZone: str = APP_CONFIG.TIMEZONE
 
@@ -69,6 +107,17 @@ def _create_event_from_timing(
     batch: CourseBatch,
     timing: Timing,
 ) -> GoogleCalendarEvent:
+    """Build a :class:`GoogleCalendarEvent` for a single weekly session.
+
+    Args:
+        summary: Event title.
+        description: Event description.
+        batch: The course batch owning the session.
+        timing: The session timing.
+
+    Returns:
+        The generated calendar event.
+    """
     tz = ZoneInfo(APP_CONFIG.TIMEZONE)
 
     first_occurrence = TimeUtils.find_first_occurrence(batch.start_date, timing.days)

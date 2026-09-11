@@ -1,3 +1,9 @@
+"""Application configuration.
+
+Loads runtime settings from a TOML file and sensitive credentials from
+environment variables.
+"""
+
 from __future__ import annotations
 
 import os
@@ -12,11 +18,26 @@ import dotenv
 
 @dataclass(frozen=True)
 class ERPCredentials:
+    """Credentials for authenticating with the SNU ERP.
+
+    Attributes:
+        netid: The student's network ID.
+        password: The student's ERP password.
+    """
+
     netid: str
     password: str
 
     @classmethod
     def from_env(cls) -> ERPCredentials:
+        """Load ERP credentials from environment variables.
+
+        Returns:
+            The parsed credentials.
+
+        Raises:
+            ValueError: If either required environment variable is missing.
+        """
         dotenv.load_dotenv()
 
         netid = os.getenv("SNU_NETID")
@@ -30,11 +51,26 @@ class ERPCredentials:
 
 @dataclass(frozen=True)
 class GoogleOAuthConfig:
+    """Google OAuth client credentials.
+
+    Attributes:
+        client_id: The OAuth client ID.
+        client_secret: The OAuth client secret.
+    """
+
     client_id: str
     client_secret: str
 
     @classmethod
     def from_env(cls) -> GoogleOAuthConfig:
+        """Load Google OAuth credentials from environment variables.
+
+        Returns:
+            The parsed credentials.
+
+        Raises:
+            ValueError: If either required environment variable is missing.
+        """
         dotenv.load_dotenv()
 
         client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -46,6 +82,11 @@ class GoogleOAuthConfig:
         return cls(client_id=client_id, client_secret=client_secret)
 
     def to_client_config(self) -> dict[str, Any]:
+        """Serialize credentials into a Google OAuth client configuration.
+
+        Returns:
+            A dict suitable for ``InstalledAppFlow.from_client_config``.
+        """
         return {
             "installed": {
                 "client_id": self.client_id,
@@ -62,6 +103,16 @@ DEFAULT_RUN_HEADLESS_BROWSER_INSTANCE: Final[bool] = True
 
 @dataclass(frozen=True)
 class AppConfig:
+    """Runtime configuration for the application.
+
+    Attributes:
+        DEFAULT_START_DATE: Fallback start date for a semester.
+        DEFAULT_END_DATE: Fallback end date for a semester.
+        TIMEZONE: IANA timezone used for scheduling.
+        EXCLUDED_DATES: Dates excluded from generated schedules.
+        RUN_HEADLESS_BROWSER_INSTANCE: Whether the browser should run headless.
+    """
+
     DEFAULT_START_DATE: date
     DEFAULT_END_DATE: date
     TIMEZONE: str
@@ -72,6 +123,18 @@ class AppConfig:
 
     @classmethod
     def from_toml(cls, path: Path = Path("config.toml")) -> AppConfig:
+        """Load configuration from a TOML file.
+
+        Args:
+            path: Path to the TOML configuration file.
+
+        Returns:
+            The parsed configuration.
+
+        Raises:
+            ValueError: If a required value is missing or invalid.
+            TypeError: If a value has an unexpected type.
+        """
         with open(path, "rb") as f:
             data = tomllib.load(f)
 
@@ -106,6 +169,18 @@ class AppConfig:
 
 
 def _parse_date(value: Any, field_name: str) -> date:
+    """Parse a ``YYYY-MM-DD`` string into a :class:`date`.
+
+    Args:
+        value: The raw configuration value.
+        field_name: Name of the field, used in error messages.
+
+    Returns:
+        The parsed date.
+
+    Raises:
+        ValueError: If the value is missing or not a valid ISO date.
+    """
     if not value:
         raise ValueError(f"Missing required config value: {field_name}")
 
@@ -118,6 +193,18 @@ def _parse_date(value: Any, field_name: str) -> date:
 
 
 def _parse_bool(value: Any, field_name: str) -> bool:
+    """Parse an optional boolean configuration value.
+
+    Args:
+        value: The raw configuration value.
+        field_name: Name of the field, used in error messages.
+
+    Returns:
+        The parsed boolean, falling back to the default when ``value`` is None.
+
+    Raises:
+        ValueError: If the value is not a boolean.
+    """
     if value is None:
         return DEFAULT_RUN_HEADLESS_BROWSER_INSTANCE
 
@@ -128,6 +215,18 @@ def _parse_bool(value: Any, field_name: str) -> bool:
 
 
 def _parse_excluded_dates(excluded_dates: list[str]) -> list[date]:
+    """Parse excluded date entries, expanding ranges into individual dates.
+
+    Args:
+        excluded_dates: Raw string entries, each either a single ``YYYY-MM-DD``
+            date or a ``YYYY-MM-DD - YYYY-MM-DD`` range.
+
+    Returns:
+        A sorted, deduplicated list of excluded dates.
+
+    Raises:
+        ValueError: If any entry is malformed.
+    """
     result: list[date] = []
 
     for entry in excluded_dates:
