@@ -1,7 +1,14 @@
 [config]
 default_start_date = "2026-08-17"
 default_end_date = "2026-12-01"
-excluded_dates = []
+excluded_dates = [
+    "2026-10-02",              # Gandi Jayanti
+    "2026-10-03 - 2026-10-10", # Midsems
+    "2026-10-20",              # Dussehra
+    "2026-10-30 - 2026-10-31", # Surge
+    "2026-11-08 - 2026-11-09", # Diwali
+    "2026-11-24",              # Guru Nanak Birthday    
+]
 
 timezone = "Asia/Kolkata"
 

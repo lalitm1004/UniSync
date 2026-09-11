@@ -7,6 +7,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from tqdm import tqdm
 
 from unisync.adapters.exporters.google.models import GoogleCalendarEvent
 from unisync.config import AppConfig, GoogleOAuthConfig
@@ -16,14 +17,13 @@ from unisync.ports import CourseExporter
 
 REVIEW_FILE_PATH: Final[Path] = Path("./data/export/google/review.json")
 TOKEN_PATH: Final[Path] = Path("./data/export/google/client_token.json")
-CALENDAR_DETAILS_PATH: Final[Path] = Path("./data/export/google/calendar_details.json")
 
 APP_CONFIG: Final[AppConfig] = AppConfig.from_toml()
 
 
 class GoogleCalendarExporter(CourseExporter):
     SCOPES: Final[list[str]] = ["https://www.googleapis.com/auth/calendar"]
-    CALENDAR_SUMMARY: Final[str] = "UniSync"
+    CALENDAR_SUMMARY: Final[str] = "UniSync v4"
 
     def export_courses(self, course_list: list[Course]) -> None:
         google_calendar_events = GoogleCalendarEvent.from_course_list(course_list)
@@ -61,7 +61,7 @@ class GoogleCalendarExporter(CourseExporter):
         service = self._initialize_service()
         calendar_id = self._get_calendar_id(service)
 
-        for event in events:
+        for event in tqdm(events, desc="Uploading events"):
             service.events().insert(
                 calendarId=calendar_id, body=event.model_dump(mode="json")
             ).execute()
@@ -108,18 +108,11 @@ class GoogleCalendarExporter(CourseExporter):
         return cast(Credentials, credentials)
 
     def _get_calendar_id(self, service: Any) -> str:
-        if CALENDAR_DETAILS_PATH.exists():
-            with open(CALENDAR_DETAILS_PATH, encoding="utf-8") as f:
-                return cast(str, json.load(f)["calendar_id"])
-
         calendar = {"summary": self.CALENDAR_SUMMARY, "timeZone": APP_CONFIG.TIMEZONE}
 
         try:
             created_calendar = service.calendars().insert(body=calendar).execute()
             calendar_id = created_calendar["id"]
-
-            with open(CALENDAR_DETAILS_PATH, "w", encoding="utf-8") as f:
-                json.dump({"calendar_id": calendar_id}, f)
 
             return cast(str, calendar_id)
         except HttpError as e:
