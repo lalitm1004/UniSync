@@ -34,7 +34,7 @@ class GoogleCalendarEvent(BaseModel):
     location: str
     start: GoogleCalendarTime
     end: GoogleCalendarTime
-    colorId: str
+    colorId: str | None = None
 
     reminders: dict[str, Any] = {
         "useDefault": False,
